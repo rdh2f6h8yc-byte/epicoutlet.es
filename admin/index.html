@@ -99,7 +99,29 @@ ol.steps li{margin-bottom:8px}
 /* ===========================================================
    Panel de EpicOutlet.es
    =========================================================== */
-const CATS = { relojes: 'Relojes', hogar: 'Hogar', bebe: 'Bebé y juguetes', mascotas: 'Mascotas', deporte: 'Deporte', tecnologia: 'Tecnología', belleza: 'Belleza' };
+const CATS_BASE = { relojes: 'Relojes', hogar: 'Hogar', bebe: 'Bebé y juguetes', mascotas: 'Mascotas', deporte: 'Deporte', tecnologia: 'Tecnología', belleza: 'Belleza' };
+/* Colecciones: las de siempre + las que ya tienen tus productos + las que crees al importar */
+let CATS_NUEVAS = [];
+function cats() {
+  const o = { ...CATS_BASE };
+  for (const p of PRODS) if (p.categoria && !o[p.categoria]) o[p.categoria] = p.categoria;
+  for (const n of CATS_NUEVAS) if (!o[n]) o[n] = n;
+  return o;
+}
+const catNombre = k => CATS_BASE[k] || k;
+function opcionesCat(sel, conAuto) {
+  return (conAuto ? `<option value="auto" ${sel === 'auto' ? 'selected' : ''}>Automática (según el nombre)</option>` : '')
+    + Object.entries(cats()).map(([k, n]) => `<option value="${esc(k)}" ${sel === k ? 'selected' : ''}>${esc(n)}</option>`).join('')
+    + '<option value="__nueva">+ Nueva colección…</option>';
+}
+function pedirColeccion() {
+  const n = (prompt('Nombre de la nueva colección (por ejemplo: Relojes para hombre)') || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!n) return null;
+  const existente = Object.entries(cats()).find(([k, v]) => v.toLowerCase() === n.toLowerCase());
+  if (existente) return existente[0];
+  CATS_NUEVAS.push(n);
+  return n;
+}
 const ESTADOS = ['Nuevo', 'Caja abierta', 'Reprecintado', 'Liquidación'];
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -267,7 +289,7 @@ function pintarLista() {
           ${p.imagenes && p.imagenes[0] ? `<img class="thumb" src="${esc(p.imagenes[0])}" alt="" loading="lazy">` : '<div class="thumb">Sin foto</div>'}
           <div class="pinfo">
             <div class="pname">${esc(p.nombre)}</div>
-            <div class="small">${eur(p.precio)} · stock ${p.stock} · ${esc(CATS[p.categoria] || p.categoria)}</div>
+            <div class="small">${eur(p.precio)} · stock ${p.stock} · ${esc(catNombre(p.categoria))}</div>
             <span class="tag ${p.publicado ? 't-pub' : 't-bor'}">${p.publicado ? 'Publicado' : 'Borrador'}</span>
           </div>
           <button class="btn b-ghost" data-edit="${p.id}" style="min-height:44px;padding:0 14px">Editar</button>
@@ -557,7 +579,7 @@ function pintarAjustes() {
       <div class="card stack">
         <h2 style="font-size:18px">Margen por categoría <span class="small" style="font-weight:500">· opcional</span></h2>
         <p class="small" style="margin:0">Déjalo vacío para usar el margen general.</p>
-        <div class="g2">${Object.entries(CATS).map(([k, n]) => `<label class="f">${n} (%)<input class="in" name="cat_${k}" inputmode="decimal" value="${esc(AJ.cat[k] ?? '')}" placeholder="${esc(AJ.margen)}"></label>`).join('')}</div>
+        <div class="g2">${Object.entries(cats()).map(([k, n]) => `<label class="f">${esc(n)} (%)<input class="in" name="cat_${esc(k)}" inputmode="decimal" value="${esc(AJ.cat[k] ?? '')}" placeholder="${esc(AJ.margen)}"></label>`).join('')}</div>
       </div>
       <div class="card stack">
         <h2 style="font-size:18px">Gastos de envío</h2>
@@ -581,7 +603,7 @@ function pintarAjustes() {
   const leer = () => {
     const f = new FormData(form);
     AJ.margen = nOrNull(f.get('margen')) ?? 0; AJ.iva = nOrNull(f.get('iva')) ?? 21; AJ.costeConIva = !!f.get('costeConIva'); AJ.usarPvp = !!f.get('usarPvp'); AJ.redondeo = f.get('redondeo');
-    AJ.cat = {}; Object.keys(CATS).forEach(k => { const v = nOrNull(f.get('cat_' + k)); if (v != null) AJ.cat[k] = v; });
+    AJ.cat = {}; Object.keys(cats()).forEach(k => { const v = nOrNull(f.get('cat_' + k)); if (v != null) AJ.cat[k] = v; });
     ENV = { precio: nOrNull(f.get('envPrecio')), gratisDesde: nOrNull(f.get('envGratis')) };
   };
   form.oninput = () => { leer(); $('#ejemplo').innerHTML = `Ejemplo: un producto que te cuesta 10,00 € se venderá a <strong>${eur(precioSugerido(10, '__general'))}</strong>.`; };
@@ -705,7 +727,7 @@ function pintarLote() {
     <div class="card stack">
       <h2 style="font-size:17px">Cómo importarlos</h2>
       <div class="g2">
-        <label class="f">Categoría en tu tienda<select class="in" id="oCat"><option value="auto">Automática (según el nombre)</option>${Object.entries(CATS).map(([k, n]) => `<option value="${k}" ${o.cat === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="f">Colección donde importarlos<select class="in" id="oCat">${opcionesCat(o.cat, true)}</select></label>
         <label class="f">Estado<select class="in" id="oEst"><option value="auto">Según el proveedor</option>${ESTADOS.map(x => `<option ${o.estado === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         <label class="f">Stock de cada producto<input class="in" id="oStock" inputmode="numeric" value="${o.stock}"></label>
         <label class="f">Fotos por producto<select class="in" id="oFotos">${[1, 2, 3, 4, 6, 8].map(n => `<option ${o.fotos === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
@@ -729,7 +751,7 @@ function pintarLote() {
           <div class="pinfo">
             <div style="font-weight:600;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(p.nombre)}</div>
             <div class="small">Coste ${eur(p.precio)} → <strong style="color:var(--ink)">${pv ? eur(pv) : 'sin precio'}</strong>${AJ.usarPvp && p.pvp && pv && p.pvp > pv ? ` · tachado ${eur(p.pvp)}` : ''}</div>
-            <div class="small">${esc(estadoLote(p))} · ${esc(CATS[c])}${p.ya ? ' · <strong>Ya importado</strong>' : ''}${p.disponible === false ? ' · <strong>Agotado</strong>' : ''}</div>
+            <div class="small">${esc(estadoLote(p))} · ${esc(catNombre(c))}${p.ya ? ' · <strong>Ya importado</strong>' : ''}${p.disponible === false ? ' · <strong>Agotado</strong>' : ''}</div>
           </div>
         </label>`; }).join('') || '<div class="empty">Ningún producto coincide.</div>'}
       ${L.hayMas ? `<button class="btn b-line full" id="masLote" style="margin-top:12px" ${L.corriendo ? 'disabled' : ''}>Cargar más productos de esta categoría</button>` : ''}
@@ -742,7 +764,7 @@ function pintarLote() {
   const re = () => { const y = window.scrollY; pintarLote(); window.scrollTo(0, y); };
   $('#cerrarLote').onclick = () => { LOTE = null; vista = 'lista'; pintar(); };
   $('#irAj').onclick = e => { e.preventDefault(); vista = 'ajustes'; pintar(); };
-  $('#oCat').onchange = e => { o.cat = e.target.value; re(); };
+  $('#oCat').onchange = e => { if (e.target.value === '__nueva') { const n = pedirColeccion(); if (n) o.cat = n; } else o.cat = e.target.value; re(); };
   $('#oEst').onchange = e => { o.estado = e.target.value; re(); };
   $('#oStock').onchange = e => { o.stock = Math.max(0, parseInt(e.target.value, 10) || 0); };
   $('#oFotos').onchange = e => { o.fotos = +e.target.value; };
@@ -858,7 +880,7 @@ function pintarEditor() {
         <h2 style="font-size:18px">Producto</h2>
         <label class="f">Nombre *<input class="in" name="nombre" value="${esc(e.nombre)}" required></label>
         <div class="g2">
-          <label class="f">Categoría<select class="in" name="categoria">${Object.entries(CATS).map(([k, n]) => `<option value="${k}" ${e.categoria === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label class="f">Colección<select class="in" name="categoria">${opcionesCat(e.categoria, false)}</select></label>
           <label class="f">Estado<select class="in" name="estado">${ESTADOS.map(s => `<option ${e.estado === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
         </div>
         <label class="f">Marca<input class="in" name="marca" value="${esc(e.marca)}"></label>
@@ -910,7 +932,13 @@ function pintarEditor() {
     $('#margen').textContent = ganancia(ed.coste, ed.precio);
     if ($('#usarSug')) $('#usarSug').onclick = () => { ed.precio = fmtPrecio(sg); ed.precioAuto = true; form.precio.value = ed.precio; pintarSug(); };
   };
+  form.addEventListener('change', ev => {
+    if (ev.target.name === 'categoria' && ev.target.value === '__nueva') {
+      leerForm(); const n = pedirColeccion(); ed.categoria = n || Object.keys(cats())[0]; pintarEditor();
+    }
+  });
   form.addEventListener('input', ev => {
+    if (ev.target.name === 'categoria' && ev.target.value === '__nueva') return;
     leerForm();
     const n = ev.target.name;
     if (n === 'precio') ed.precioAuto = false;

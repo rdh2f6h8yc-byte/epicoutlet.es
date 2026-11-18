@@ -478,6 +478,20 @@ const ROTAS = [['Ăˇ','á'],['Ă©','é'],['Ă­','í'],['Ăł','ó'],['Ăş','
   ['Ã¡','á'],['Ã©','é'],['Ã­','í'],['Ã³','ó'],['Ãº','ú'],['Ã±','ñ'],['Ã¼','ü'],['Ã‰','É'],['Ã“','Ó'],['Ã‘','Ñ'],['Ãš','Ú'],['Â¿','¿'],['Â¡','¡'],['Âº','º'],['Âª','ª'],['â‚¬','€'],['â€¢','•'],['â€œ','“'],['â€','”']];
 const arreglar = t => { t = String(t == null ? '' : t); if (!/[ĂÃÂâ]/.test(t)) return t; for (const [a, b] of ROTAS) t = t.split(a).join(b); return t; };
 /* Foto del producto, o dibujo de la categoría si aún no tiene */
+/* Colecciones con productos (en la demo, todas) */
+let DESDE_BD = false;
+function catsVisibles() {
+  const usadas = new Set(PRODUCTS.map(p => p.cat));
+  return Object.entries(CATS).filter(([k]) => !DESDE_BD || usadas.has(k));
+}
+const COLORES = ['#E8EEF6', '#EEF3EA', '#FBEFE3', '#F6ECEF', '#E7F1F3', '#ECEBF5', '#F7F0E6', '#FFF1E7'];
+const ICONO_COLECCION = 'M20 12 12 20 4 12V4h8l8 8ZM8 8h.01';
+function claveColeccion(nombre) {
+  if (CATS[nombre]) return nombre;
+  const k = String(nombre).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'otros';
+  if (!CATS[k]) CATS[k] = { name: esc(nombre), bg: COLORES[Object.keys(CATS).length % COLORES.length], icon: /reloj/i.test(nombre) ? CATS.relojes.icon : ICONO_COLECCION };
+  return k;
+}
 const media = (p, size, sw, i = 0) => p.images && p.images[i] ? `<img src="${p.images[i]}" alt="${p.name}" loading="lazy" decoding="async">` : icon(CATS[p.cat].icon, size, sw);
 const quedan = n => n <= 0 ? 'Agotado' : n === 1 ? 'Última unidad' : `Solo quedan ${n}`;
 const phBg = p => p.images && p.images.length ? '#fff' : CATS[p.cat].bg;
@@ -523,7 +537,7 @@ function card(p) {
 /* Menú de categorías */
 function renderCatnav(active) {
   const links = [['novedades', 'Novedades'], ['top', 'Top ventas'], ['liquidaciones', 'Liquidaciones', 'hot'],
-    ...Object.entries(CATS).map(([k, v]) => [k, v.name])];
+    ...catsVisibles().map(([k, v]) => [k, v.name])];
   $('#catnav').innerHTML = links.map(([k, n, cls]) => `<a href="#/c/${k}" class="${cls || ''} ${active === k ? 'on' : ''}">${n}</a>`).join('');
 }
 
@@ -536,7 +550,7 @@ const dropTarget = Date.now() + ((1 * 24 + 20) * 60 + 12) * 60000; // [FECHA DEL
 
 function pageHome() {
   const f = PRODUCTS.find(p => p.top && pct(p) > 0) || PRODUCTS[0];
-  const filters = [['todo', 'Todo'], ['relojes', 'Relojes'], ['hogar', 'Hogar'], ['bebe', 'Bebé'], ['mascotas', 'Mascotas'], ['deporte', 'Deporte']];
+  const filters = [['todo', 'Todo'], ...catsVisibles().slice(0, 6).map(([k, c]) => [k, c.name])];
   const hayTop = PRODUCTS.some(p => p.top);
   const base = hayTop ? PRODUCTS.filter(p => p.top) : PRODUCTS.slice(0, 12);
   const tops = base.filter(p => homeFilter === 'todo' || p.cat === homeFilter);
@@ -579,7 +593,7 @@ function pageHome() {
     <section class="blk" style="padding-top:8px">
       <div class="shead"><h2>Compra por categoría</h2><a href="#/c/todo" class="link">Ver todo</a></div>
       <div class="catgrid">
-        ${Object.entries(CATS).map(([k, c]) => `<a href="#/c/${k}" class="cat" style="background:${c.bg}">${icon(c.icon, 44, 1.5)}${c.name}</a>`).join('')}
+        ${catsVisibles().map(([k, c]) => `<a href="#/c/${k}" class="cat" style="background:${c.bg}">${icon(c.icon, 44, 1.5)}${c.name}</a>`).join('')}
         <a href="#/c/liquidaciones" class="cat" style="background:#FFF1E7">${icon(LIQ_ICON, 44, 1.5)}Liquidaciones</a>
       </div>
     </section>
@@ -1128,11 +1142,12 @@ async function cargarProductos() {
     if (!r.ok) throw new Error(r.status);
     const rows = await r.json();
     const mes = 30 * 864e5;
+    DESDE_BD = true;
     PRODUCTS = rows.map(x => ({
       id: x.slug,
       rawName: arreglar(x.nombre),
       name: esc(arreglar(x.nombre)),
-      cat: CATS[x.categoria] ? x.categoria : 'hogar',
+      cat: claveColeccion(arreglar(x.categoria || 'Otros')),
       cond: CONDS[x.estado] ? x.estado : 'Nuevo',
       brand: x.marca ? esc(arreglar(x.marca)) : '',
       price: Number(x.precio),
