@@ -2,7 +2,7 @@
 // En Stripe → Developers → Webhooks: añade esta dirección con los eventos
 // checkout.session.completed, checkout.session.async_payment_succeeded,
 // checkout.session.async_payment_failed y checkout.session.expired.
-const { db, firmaValida, leerCrudo } = require('./_srv.js');
+const { db, firmaValida, leerCrudo, secretoWebhook } = require('./_srv.js');
 
 async function marcarPagado(s) {
   const id = (s.metadata || {}).pedido_id || s.client_reference_id;
@@ -30,7 +30,7 @@ async function marcarPagado(s) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).send('Método no permitido');
   const raw = await leerCrudo(req);
-  if (!firmaValida(raw, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET)) return res.status(400).send('Firma no válida');
+  if (!firmaValida(raw, req.headers['stripe-signature'], secretoWebhook())) return res.status(400).send('Firma no válida');
   let ev; try { ev = JSON.parse(raw.toString('utf8')); } catch (e) { return res.status(400).send('JSON no válido'); }
   const s = ev.data && ev.data.object || {};
   try {

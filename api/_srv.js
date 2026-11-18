@@ -6,8 +6,11 @@
 const crypto = require('crypto');
 const CFG = require('../config.js');
 
-const claveSupabase = () => process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const pagosActivos = () => !!(process.env.STRIPE_SECRET_KEY && claveSupabase() && CFG.supabaseUrl);
+const env = (...nombres) => { for (const n of nombres) { const v = (process.env[n] || '').trim(); if (v) return v; } return ''; };
+const claveSupabase = () => env('SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY', 'SUPABASE_SECRET');
+const claveStripe = () => env('STRIPE_SECRET_KEY', 'STRIPE_SECRET', 'STRIPE_SK', 'STRIPE_API_KEY');
+const secretoWebhook = () => env('STRIPE_WEBHOOK_SECRET', 'STRIPE_WEBHOOK_SIGNING_SECRET', 'STRIPE_WEBHOOK', 'STRIPE_SIGNING_SECRET');
+const pagosActivos = () => !!(claveStripe() && claveSupabase() && CFG.supabaseUrl);
 
 // Base de datos con permisos de servidor
 async function db(ruta, opt = {}) {
@@ -33,7 +36,7 @@ function form(obj, prefijo = '', out = new URLSearchParams()) {
 async function stripe(ruta, params) {
   const r = await fetch('https://api.stripe.com/v1/' + ruta, {
     method: params ? 'POST' : 'GET',
-    headers: { Authorization: 'Bearer ' + process.env.STRIPE_SECRET_KEY, 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: { Authorization: 'Bearer ' + claveStripe(), 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params ? form(params) : undefined
   });
   const j = await r.json();
@@ -68,4 +71,4 @@ async function leerEnvio() {
 
 const redondo = n => Math.round(n * 100) / 100;
 
-module.exports = { CFG, db, stripe, form, firmaValida, leerCrudo, leerEnvio, pagosActivos, redondo };
+module.exports = { CFG, claveStripe, claveSupabase, secretoWebhook, db, stripe, form, firmaValida, leerCrudo, leerEnvio, pagosActivos, redondo };
