@@ -260,7 +260,10 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 .ckt th{background:var(--soft)}
 @media (max-width:760px){.ck{bottom:84px;left:10px;right:10px;padding:16px}.ckt{font-size:13px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:14px 22px;border-radius:14px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .3s;z-index:50;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
-.toast.show{transform:translate(-50%,0)}
+.toast{opacity:0;visibility:hidden;transition:transform .3s,opacity .3s,visibility .3s}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.bump{animation:bump .45s ease}
 
 
 /* Páginas de información */
@@ -580,9 +583,12 @@ function addToCart(id, qty = 1) {
   if (line) line.qty = Math.min(p.stock, line.qty + qty); else cart.push({ id, qty: Math.min(p.stock, qty) });
   store.set(cart); updateBadges();
   evento('add_to_cart', { currency: 'EUR', value: +(p.price * qty).toFixed(2), items: [itemGA(p, qty)] });
-  toast(`Añadido: ${p.name}`);
+  avisoCarrito();
 }
 let tt;
+function avisoCarrito() {
+  document.querySelectorAll('.hbtn.cart, #bnav a[data-r="cart"]').forEach(el => { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); });
+}
 function toast(msg) {
   const t = $('#toast');
   t.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>${msg}`;
