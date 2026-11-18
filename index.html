@@ -716,13 +716,24 @@ function pageProduct(id) {
 }
 
 /* Carrito */
-let checkoutMsg = '', couponMsg = '', pagando = false;
+let checkoutMsg = '', couponMsg = '', pagando = false, cupon = '';
+/* Sesión del panel (si has entrado en /admin en este navegador) */
+function tokenAdmin() {
+  try {
+    const C = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : {};
+    const ref = (C.supabaseUrl || '').replace(/^https:\/\//, '').split('.')[0];
+    const v = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) || 'null');
+    const s = v && (v.access_token ? v : v.currentSession);
+    return s && s.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now()) ? s.access_token : '';
+  } catch (e) { return ''; }
+}
 let ENVIO = { precio: null, gratisDesde: null };
 function costeEnvio(sub) { if (ENVIO.precio == null) return null; return ENVIO.gratisDesde != null && sub >= ENVIO.gratisDesde ? 0 : ENVIO.precio; }
 function pageCart() {
   const lines = cart.map(l => ({ ...l, p: byId(l.id) })).filter(l => l.p);
   const sub = lines.reduce((a, l) => a + l.p.price * l.qty, 0);
-  const env = costeEnvio(sub);
+  const env = cupon === 'PRUEBA' ? 0 : costeEnvio(sub);
+  const totalCupon = cupon === 'PRUEBA' ? 0 : null;
   const old = lines.reduce((a, l) => a + (pct(l.p) > 0 ? l.p.old : l.p.price) * l.qty, 0);
   const units = lines.reduce((a, l) => a + l.qty, 0);
   return `<div class="cartpage"><div class="wrap">
@@ -747,7 +758,8 @@ function pageCart() {
         <div class="row"><span>Envío (1–3 días laborables)</span><strong>${env == null ? 'Al pagar' : env === 0 ? 'Gratis' : eur(env)}</strong></div>
         ${ENVIO.gratisDesde != null && env > 0 ? `<div class="note" style="margin-top:-6px">Te faltan ${eur(ENVIO.gratisDesde - sub)} para el envío gratis.</div>` : ''}
         ${old - sub > 0.009 ? `<div class="row saving"><span>Te ahorras</span><span>${eur(old - sub)}</span></div>` : ''}
-        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(sub + (env || 0))}</b></div>
+        ${cupon === 'PRUEBA' ? `<div class="row saving"><span>Cupón PRUEBA</span><span>−${eur(sub)}</span></div>` : ''}
+        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(totalCupon != null ? 0 : sub + (env || 0))}</b></div>
         <div class="note" style="margin-top:-8px">IVA incluido.</div>
         <div style="display:flex;gap:8px"><label for="cupon" class="sr">Código de descuento</label><input id="cupon" class="input" style="min-height:48px;flex:1;min-width:0" placeholder="Código de descuento"><button class="btn btn-line" id="applyCoupon" style="min-height:48px;padding:0 16px;font-size:14px">Aplicar</button></div>
         ${couponMsg ? `<div class="msg" role="status">${couponMsg}</div>` : ''}
@@ -957,7 +969,9 @@ async function finalizarCompra() {
   if (pagando || !cart.length) return;
   pagando = true; checkoutMsg = ''; render(true);
   try {
-    const r = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: cart.map(l => ({ id: l.id, qty: l.qty })) }) });
+    const headers = { 'Content-Type': 'application/json' };
+    if (cupon) headers.Authorization = 'Bearer ' + tokenAdmin();
+    const r = await fetch('/api/checkout', { method: 'POST', headers, body: JSON.stringify({ items: cart.map(l => ({ id: l.id, qty: l.qty })), cupon: cupon || undefined }) });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.url) { location.href = d.url; return; }
     if (r.status === 409 && Array.isArray(d.problemas)) {
@@ -969,6 +983,7 @@ async function finalizarCompra() {
       }
       store.set(cart); updateBadges();
     }
+    if (d.cupon === false) { cupon = ''; couponMsg = ''; }
     checkoutMsg = esc(d.error || 'No se ha podido iniciar el pago. Inténtalo de nuevo.');
   } catch (e) { checkoutMsg = 'No hay conexión. Inténtalo de nuevo.'; }
   pagando = false; render(true);
@@ -976,6 +991,7 @@ async function finalizarCompra() {
 
 function pageGracias(sesion) {
   if (sesion && cart.length) { cart = []; store.set(cart); updateBadges(); }
+  if (sesion) cupon = '';
   if (sesion) {
     fetch('/api/pedido?s=' + encodeURIComponent(sesion)).then(r => r.ok ? r.json() : null).then(p => {
       const el = $('#numPedido'); if (p && el) el.innerHTML = `Número de pedido: <strong>#${p.numero}</strong>`;
@@ -1045,7 +1061,13 @@ document.addEventListener('click', e => {
   else if (d.cq) { const l = cart.find(i => String(i.id) === d.cq); const p = byId(l.id); l.qty = Math.max(1, Math.min(p.stock, l.qty + +d.d)); store.set(cart); render(true); }
   else if (d.del) { cart = cart.filter(i => String(i.id) !== d.del); store.set(cart); render(true); }
   else if (t.id === 'checkout') { finalizarCompra(); }
-  else if (t.id === 'applyCoupon') { const v = $('#cupon').value.trim(); couponMsg = v ? `El código «${v.replace(/[<>&"]/g, '')}» no es válido o ha caducado.` : 'Escribe un código de descuento.'; render(true); }
+  else if (t.id === 'applyCoupon') {
+    const v = $('#cupon').value.trim().toUpperCase();
+    if (!v) couponMsg = 'Escribe un código de descuento.';
+    else if (v === 'PRUEBA' && tokenAdmin()) { cupon = 'PRUEBA'; couponMsg = 'Cupón de prueba aplicado: producto y envío gratis. Solo funciona con tu sesión del panel abierta.'; }
+    else { cupon = ''; couponMsg = `El código «${esc(v)}» no es válido o ha caducado.`; }
+    render(true);
+  }
   else if (t.id === 'toggleFilters') { const f = $('#filters'); const open = f.classList.toggle('open'); t.setAttribute('aria-expanded', open); }
   else if ('scroll' in d || 'gotoStates' in d) {
     e.preventDefault();

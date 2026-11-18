@@ -22,6 +22,7 @@ async function marcarPagado(s) {
   // Solo pasa de "pendiente" a "pagado" una vez, aunque Stripe repita el aviso
   const hechos = await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(cambios) });
   if (!hechos || !hechos.length) return;
+  if (String(hechos[0].notas || '').startsWith('PRUEBA')) return; // los pedidos de prueba no restan stock
   for (const l of hechos[0].productos || []) {
     if (l.producto_id) await db('rpc/descontar_stock', { method: 'POST', body: JSON.stringify({ p_id: l.producto_id, n: l.cantidad }) });
   }
@@ -35,7 +36,7 @@ module.exports = async (req, res) => {
   const s = ev.data && ev.data.object || {};
   try {
     if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.async_payment_succeeded') {
-      if (s.payment_status === 'paid') await marcarPagado(s);
+      if (s.payment_status === 'paid' || s.payment_status === 'no_payment_required') await marcarPagado(s);
     } else if (ev.type === 'checkout.session.expired' || ev.type === 'checkout.session.async_payment_failed') {
       const id = (s.metadata || {}).pedido_id || s.client_reference_id;
       if (id) await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', body: JSON.stringify({ estado: 'cancelado' }) });

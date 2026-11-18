@@ -425,7 +425,7 @@ function pintarPedidos() {
         <button class="prow" data-ped="${p.id}" style="width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer">
           ${(p.productos[0] || {}).imagen ? `<img class="thumb" src="${esc(p.productos[0].imagen)}" alt="">` : '<div class="thumb">—</div>'}
           <div class="pinfo">
-            <div class="pname">#${p.numero} · ${esc(p.cliente_nombre || 'Cliente')}</div>
+            <div class="pname">#${p.numero} · ${esc(p.cliente_nombre || 'Cliente')}${String(p.notas || '').startsWith('PRUEBA') ? ' · <span style="color:var(--brand-dark)">PRUEBA</span>' : ''}</div>
             <div class="small">${fecha(p.pagado || p.creado)} · ${p.productos.reduce((a, l) => a + l.cantidad, 0)} art. · <strong style="color:var(--ink)">${eur(p.total)}</strong></div>
             ${chipPed(p.estado)}
           </div>
