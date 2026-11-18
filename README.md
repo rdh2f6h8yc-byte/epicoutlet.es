@@ -18,8 +18,8 @@ Si `config.js` está vacío, la tienda enseña productos de ejemplo.
 ## Puesta en marcha (una sola vez)
 
 1. **Supabase:** crea un proyecto nuevo en supabase.com (región Europa).
-2. **Base de datos:** en *SQL Editor → New query*, pega `supabase/schema.sql`, cambia `TU_CORREO@ejemplo.com` por tu correo y pulsa *Run*.
-3. **Usuario:** en *Authentication → Users → Add user*, crea tu usuario con ese correo y una contraseña (marca *Auto Confirm User*).
+2. **Base de datos:** en *SQL Editor → New query*, pega `supabase/schema.sql` y pulsa *Run* (ya incluye el correo de administrador almarainstalaciones@gmail.com).
+3. **Usuario:** en *Authentication → Users → Add user*, crea el usuario almarainstalaciones@gmail.com y una contraseña (marca *Auto Confirm User*).
    Después, en *Authentication → Sign In / Providers*, desactiva *Allow new users to sign up*.
 4. **Claves:** en *Project Settings → API Keys* copia la *Project URL* y la *Publishable key* y ponlas en `config.js`.
 5. **Vercel:** importa este repositorio (preset *Other*). No hace falta ninguna variable de entorno.

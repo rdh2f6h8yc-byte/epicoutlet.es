@@ -1,8 +1,7 @@
 -- =====================================================================
 -- EpicOutlet.es · base de datos (Supabase)
 -- Pega todo este archivo en Supabase → SQL Editor → New query → Run.
--- Antes, cambia TU_CORREO@ejemplo.com (al final) por el correo con el
--- que vas a entrar al panel /admin.
+-- Correo con permiso para entrar al panel /admin: almarainstalaciones@gmail.com
 -- =====================================================================
 
 -- Quién puede administrar la tienda
@@ -90,6 +89,6 @@ drop policy if exists "admin borra fotos" on storage.objects;
 create policy "admin borra fotos" on storage.objects
   for delete to authenticated using (bucket_id = 'productos' and public.es_admin());
 
--- ⚠️ Cambia esto por tu correo de acceso al panel
-insert into public.admins (email) values ('TU_CORREO@ejemplo.com')
+-- Correo de acceso al panel
+insert into public.admins (email) values ('almarainstalaciones@gmail.com')
 on conflict do nothing;
