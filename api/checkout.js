@@ -46,8 +46,8 @@ module.exports = async (req, res) => {
       mode: 'payment',
       locale: 'es',
       client_reference_id: pedido.id,
-      success_url: `${origen}/#/gracias?s={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origen}/#/carrito`,
+      success_url: `${origen}/gracias?s={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origen}/carrito`,
       line_items: lineas.map(l => ({
         quantity: l.cantidad,
         price_data: {

@@ -52,5 +52,15 @@ El coste, el proveedor y su enlace se guardan aparte y nunca se ven en la tienda
 
 Cuando un cliente paga, el pedido aparece en *Panel → Pedidos* con el enlace para comprarlo al proveedor y la dirección del cliente lista para copiar.
 
+## SEO
+
+- Cada producto y colección tiene su dirección: `/producto/<slug>`, `/coleccion/<colección>`, `/info/<página>`.
+- `api/pagina.js` devuelve esas páginas ya preparadas para Google: título, descripción, canonical, Open Graph,
+  datos estructurados (Product con precio, estado, envío y devoluciones; BreadcrumbList; ItemList) y el contenido escrito.
+- `/sitemap.xml` (`api/sitemap.js`) se genera solo con los productos publicados y sus fotos.
+- `robots.txt` bloquea panel, API, carrito y cuenta. Las direcciones `*.vercel.app` llevan `noindex` para no duplicar.
+- Al publicar o borrar productos desde el panel se avisa a Bing/Yandex con IndexNow (`api/indexnow.js`).
+- Google: añade la propiedad en Search Console y envía `https://www.epicoutlet.es/sitemap.xml` una vez.
+- Logo, favicon e iconos en `img/` y `favicon.ico`; `site.webmanifest` para guardar la tienda en el móvil.
+
 ## Pendiente
-- SEO: direcciones propias por producto, sitemap y datos estructurados.

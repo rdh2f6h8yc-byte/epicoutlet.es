@@ -2,6 +2,8 @@
 // Supabase → Project Settings → API Keys / Data API.
 const EO_CONFIG = {
   supabaseUrl: 'https://ajvbndzdkikacliqzjot.supabase.co',  // p. ej. 'https://abcdefgh.supabase.co'
-  supabaseKey: 'sb_publishable_Vb1QnNSYwgtpGQ9Vx3s4WQ_pwrMhBHG'   // clave "Publishable" (sb_publishable_...) o la "anon public"
+  supabaseKey: 'sb_publishable_Vb1QnNSYwgtpGQ9Vx3s4WQ_pwrMhBHG',  // clave "Publishable" (sb_publishable_...) o la "anon public"
+  sitioUrl: 'https://www.epicoutlet.es',  // dirección principal de la tienda (para Google)
+  indexNowKey: 'a5bad2108bf96626153a666c0e0a5bcb'  // clave pública para avisar a Bing y otros buscadores (archivo /a5bad2108bf96626153a666c0e0a5bcb.txt)
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = EO_CONFIG;
