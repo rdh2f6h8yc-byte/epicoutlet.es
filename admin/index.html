@@ -109,7 +109,7 @@ function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('s
 
 const CFG = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : {};
 /* ---------- Margen automático ---------- */
-const AJ_DEF = { margen: 40, iva: 21, costeConIva: false, redondeo: '90', cat: {} };
+const AJ_DEF = { margen: 40, iva: 21, costeConIva: false, redondeo: '90', usarPvp: true, cat: {} };
 let AJ = { ...AJ_DEF };
 async function cargarAjustes() {
   try {
@@ -123,7 +123,7 @@ async function cargarAjustes() {
   }
 }
 async function guardarAjustes() {
-  const v = { margen: AJ.margen, iva: AJ.iva, costeConIva: AJ.costeConIva, redondeo: AJ.redondeo, cat: AJ.cat };
+  const v = { margen: AJ.margen, iva: AJ.iva, costeConIva: AJ.costeConIva, redondeo: AJ.redondeo, usarPvp: AJ.usarPvp, cat: AJ.cat };
   try { localStorage.setItem('eo_ajustes', JSON.stringify(v)); } catch (e) {}
   const { error } = await sb.from('ajustes').upsert({ clave: 'precios', valor: v });
   AJ._db = !error; AJ._guardado = true;
@@ -158,6 +158,9 @@ let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null
   if (h.startsWith('#importar=')) {
     try { const d = JSON.parse(decodeURIComponent(h.slice(10))); sessionStorage.setItem('eo_pend', JSON.stringify(d)); } catch (e) { sessionStorage.setItem('eo_err', 'No se ha podido leer el producto que ha enviado el atajo.'); }
     history.replaceState(null, '', location.pathname);
+  } else if (h.startsWith('#lista=')) {
+    sessionStorage.setItem('eo_lista', decodeURIComponent(h.slice(7)));
+    history.replaceState(null, '', location.pathname);
   } else if (h.startsWith('#error=')) {
     sessionStorage.setItem('eo_err', 'El atajo no ha podido leer la página: ' + decodeURIComponent(h.slice(7)));
     history.replaceState(null, '', location.pathname);
@@ -182,7 +185,7 @@ function pintarLogin(error) {
   $('#tabs').hidden = true; $('#salir').hidden = true;
   $('#app').innerHTML = `<div class="card stack" style="max-width:420px;margin:30px auto">
     <h1 style="font-size:28px">Entrar al panel</h1>
-    ${sessionStorage.getItem('eo_pend') ? '<div class="msg info">Tienes un producto del atajo esperando. Entra para revisarlo.</div>' : ''}
+    ${sessionStorage.getItem('eo_pend') || sessionStorage.getItem('eo_lista') ? '<div class="msg info">Tienes un producto del atajo esperando. Entra para revisarlo.</div>' : ''}
     ${error ? `<div class="msg err">${esc(error)}</div>` : ''}
     <form id="login" class="stack">
       <label class="f">Correo<input class="in" type="email" name="email" autocomplete="username" required></label>
@@ -202,8 +205,9 @@ async function entrar() {
   if (error || ok !== true) { await sb.auth.signOut(); return pintarLogin('Este usuario no tiene permiso de administrador. Añade su correo a la tabla «admins» en Supabase.'); }
   $('#tabs').hidden = false; $('#salir').hidden = false;
   await Promise.all([cargar(), cargarAjustes()]);
-  const pend = sessionStorage.getItem('eo_pend'); const err = sessionStorage.getItem('eo_err');
-  if (pend) { sessionStorage.removeItem('eo_pend'); abrirEditor(desdeImportadoConPrecio(JSON.parse(pend))); }
+  const pend = sessionStorage.getItem('eo_pend'), err = sessionStorage.getItem('eo_err'), lista = sessionStorage.getItem('eo_lista');
+  if (pend) { sessionStorage.removeItem('eo_pend'); await abrirDelAtajo(JSON.parse(pend)); }
+  else if (lista) { sessionStorage.removeItem('eo_lista'); await abrirEnlace(lista); }
   else if (err) { sessionStorage.removeItem('eo_err'); vista = 'importar'; pintar(); toast(err); }
   else pintar();
 }
@@ -223,6 +227,7 @@ function pintar() {
   if (vista === 'importar') return pintarImportar();
   if (vista === 'atajo') return pintarAtajo();
   if (vista === 'ajustes') return pintarAjustes();
+  if (vista === 'lote' && LOTE) return pintarLote();
   pintarLista();
 }
 
@@ -266,9 +271,10 @@ function pintarImportar() {
   $('#app').innerHTML = `
     <div class="card stack">
       <h1 style="font-size:24px">Importar de un proveedor</h1>
-      <p class="muted" style="margin:0">Pega el enlace de la página del producto. Leo el nombre, las fotos, el precio y la descripción, y lo revisas antes de publicarlo.</p>
+      <p class="muted" style="margin:0">Pega el enlace de <strong>un producto</strong> o de <strong>una categoría entera</strong>. Leo el nombre, las fotos, el precio y la descripción con tu margen ya aplicado.</p>
       <form id="leer" class="stack">
-        <label class="f">Enlace del producto<input class="in" name="url" type="url" inputmode="url" placeholder="https://proveedor.com/producto/..." required></label>
+        ${LOTE ? `<div class="msg info">Tienes una lista abierta: <a href="#" id="volverLote" style="font-weight:700">${esc(LOTE.titulo)} (${LOTE.productos.length} productos)</a></div>` : ''}
+        <label class="f">Enlace del producto o de la categoría<input class="in" name="url" type="url" inputmode="url" placeholder="https://proveedor.com/collections/..." required></label>
         <button class="btn b-dark" type="submit">Leer producto</button>
       </form>
       <div id="leerMsg"></div>
@@ -278,14 +284,13 @@ function pintarImportar() {
       <p class="muted" style="margin:0">Usa el <a href="#" id="irAtajo" style="font-weight:600">atajo del iPhone</a>: lee la página tal como la ves tú en Safari, con tu sesión abierta.</p>
     </div>`;
   $('#irAtajo').onclick = e => { e.preventDefault(); vista = 'atajo'; pintar(); };
+  if ($('#volverLote')) $('#volverLote').onclick = e => { e.preventDefault(); vista = 'lote'; pintar(); };
   $('#leer').onsubmit = async e => {
     e.preventDefault(); const url = new FormData(e.target).get('url'); const b = e.target.querySelector('button');
     b.disabled = true; b.textContent = 'Leyendo…'; $('#leerMsg').innerHTML = '';
     try {
-      const r = await fetch('/api/leer?url=' + encodeURIComponent(url), { headers: { Authorization: 'Bearer ' + session.access_token } });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Error al leer el producto');
-      abrirEditor(desdeImportadoConPrecio(d));
+      const d = await leerUrl(url);
+      if (d.tipo === 'lista') abrirLote(d); else abrirEditor(desdeImportadoConPrecio(d));
     } catch (err) {
       $('#leerMsg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`;
       b.disabled = false; b.textContent = 'Leer producto';
@@ -297,7 +302,13 @@ function pintarImportar() {
 // Este código se ejecuta dentro de la página del proveedor, en Safari.
 function atajoFn(ORIGEN) {
   (async () => {
-    const d = { url: location.href.split('#')[0], nombre: '', precio: null, moneda: '', imagenes: [], descripcion: '', marca: '', sku: '', caracteristicas: {} };
+    const aqui = location.href.split('#')[0];
+    let lista = /\/(collections?|categor[a-z]*|category|c)\/[^/]+/i.test(location.pathname) && !/\/products?\/[^/]+/i.test(location.pathname);
+    for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
+      try { const j = JSON.parse(s.textContent); const t = [].concat(j, (j && j['@graph']) || []).map(x => [].concat((x && x['@type']) || []).join(' ')).join(' '); if (/\bProduct\b/.test(t) && !/ItemList/.test(t)) { lista = false; break; } if (/ItemList/.test(t)) lista = true; } catch (e) {}
+    }
+    if (lista) { completion(ORIGEN + '/admin/#lista=' + encodeURIComponent(aqui)); return; }
+    const d = { url: aqui, nombre: '', precio: null, moneda: '', imagenes: [], descripcion: '', marca: '', sku: '', caracteristicas: {} };
     const limpio = t => String(t == null ? '' : t).replace(/<br\s*\/?>|<\/p>/gi, '\n').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
     const num = s => { if (typeof s === 'number') return s; s = String(s || '').replace(/[^\d.,]/g, ''); if (!s) return null; const c = s.lastIndexOf(','), p = s.lastIndexOf('.'); if (c > -1 && p > -1) s = c > p ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); else if (c > -1) s = /,\d{1,2}$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); else if ((s.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(s)) s = s.replace(/\./g, ''); const n = parseFloat(s); return isNaN(n) ? null : n; };
     const addImg = u => { if (u && typeof u === 'object') u = u.url || u.contentUrl || ''; u = String(u || '').trim(); if (!u || u.startsWith('data:')) return; try { u = new URL(u.startsWith('//') ? 'https:' + u : u, location.href).href; } catch (e) { return; } if (!d.imagenes.includes(u) && d.imagenes.length < 12) d.imagenes.push(u); };
@@ -377,6 +388,7 @@ function pintarAjustes() {
           <label class="f">Margen general (% sobre el coste)<input class="in" name="margen" inputmode="decimal" value="${esc(AJ.margen)}"></label>
           <label class="f">IVA de venta (%)<input class="in" name="iva" inputmode="decimal" value="${esc(AJ.iva)}"></label>
         </div>
+        <label class="check"><input type="checkbox" name="usarPvp" ${AJ.usarPvp ? 'checked' : ''}>Usar el PVP del proveedor como precio tachado (si es mayor que mi precio)</label>
         <label class="check"><input type="checkbox" name="costeConIva" ${AJ.costeConIva ? 'checked' : ''}>Los precios de mis proveedores ya llevan IVA incluido</label>
         <label class="f">Redondeo del precio<select class="in" name="redondeo">
           <option value="90" ${AJ.redondeo === '90' ? 'selected' : ''}>Terminado en ,90 (ej. 24,90 €)</option>
@@ -402,7 +414,7 @@ function pintarAjustes() {
   const form = $('#aj');
   const leer = () => {
     const f = new FormData(form);
-    AJ.margen = nOrNull(f.get('margen')) ?? 0; AJ.iva = nOrNull(f.get('iva')) ?? 21; AJ.costeConIva = !!f.get('costeConIva'); AJ.redondeo = f.get('redondeo');
+    AJ.margen = nOrNull(f.get('margen')) ?? 0; AJ.iva = nOrNull(f.get('iva')) ?? 21; AJ.costeConIva = !!f.get('costeConIva'); AJ.usarPvp = !!f.get('usarPvp'); AJ.redondeo = f.get('redondeo');
     AJ.cat = {}; Object.keys(CATS).forEach(k => { const v = nOrNull(f.get('cat_' + k)); if (v != null) AJ.cat[k] = v; });
   };
   form.oninput = () => { leer(); $('#ejemplo').innerHTML = `Ejemplo: un producto que te cuesta 10,00 € se venderá a <strong>${eur(precioSugerido(10, '__general'))}</strong>.`; };
@@ -444,7 +456,7 @@ function desdeFila(p) {
 function adivinarCategoria(t) {
   t = (t || '').toLowerCase();
   const reglas = [[/reloj|watch|smartwatch/, 'relojes'], [/perro|gato|mascota|pet\b|dog|cat\b|arenero|correa para/, 'mascotas'], [/beb[eé]|niñ|infantil|juguete|peluche|toy|baby/, 'bebe'],
-    [/ram\b|ssd|usb|auricular|cargador|móvil|movil|tablet|port[aá]til|ordenador|cable hdmi|altavoz|bluetooth|gaming|teclado|rat[oó]n/, 'tecnologia'],
+    [/ram\b|ssd|usb|hdmi|auricular|cargador|m[oó]vil|smartphone|tablet|port[aá]til|ordenador|pc\b|altavoz|bluetooth|gaming|teclado|rat[oó]n|impresora|monitor|router|wifi|disco duro|pendrive|webcam|micr[oó]fono|fuente de alimentaci|tarjeta gr|procesador|adaptador|cable |hub\b|power ?bank|bater[ií]a externa|consola|smartwatch|tinta|t[oó]ner/, 'tecnologia'],
     [/crema|perfume|desodorante|champ[uú]|maquillaje|cosm[eé]t|afeitad|belleza|sérum|serum/, 'belleza'],
     [/deport|fitness|bicicleta|ciclismo|ski|snowboard|running|yoga|pesa|mancuerna|isot[oó]nic/, 'deporte']];
   for (const [re, c] of reglas) if (re.test(t)) return c;
@@ -453,16 +465,206 @@ function adivinarCategoria(t) {
 function desdeImportado(d) {
   let host = ''; try { host = new URL(d.url).hostname.replace(/^www\./, ''); } catch (e) {}
   return { ...vacio(), nombre: d.nombre || '', marca: d.marca || '', descripcion: d.descripcion || '', categoria: adivinarCategoria((d.nombre || '') + ' ' + (d.descripcion || '').slice(0, 300)),
-    specs: Object.entries(d.caracteristicas || {}).map(([k, x]) => `${k}: ${x}`).join('\n') + (d.sku ? `${Object.keys(d.caracteristicas || {}).length ? '\n' : ''}Referencia: ${d.sku}` : ''),
-    imagenes: (d.imagenes || []).map(src => ({ src, remota: true })), coste: d.precio != null ? fmtPrecio(d.precio) : '', moneda: d.moneda || '', proveedor: host, origen_url: d.url || '', importado: true };
+    specs: Object.entries(d.caracteristicas || {}).map(([k, x]) => `${k}: ${x}`).join('\n'), estado: ESTADOS.includes(d.estado) ? d.estado : 'Nuevo',
+    imagenes: (d.imagenes || []).map(src => ({ src, remota: true })), coste: d.precio != null ? fmtPrecio(d.precio) : '', moneda: d.moneda || '', proveedor: host, origen_url: d.url || '',
+    notas: d.sku ? `Ref. proveedor: ${d.sku}` : '', pvpProv: d.pvp || null, importado: true };
 }
 function desdeImportadoConPrecio(d) {
   const o = desdeImportado(d);
-  if (!o.moneda || o.moneda === 'EUR') { const s = precioSugerido(o.coste, o.categoria); if (s) { o.precio = fmtPrecio(s); o.precioAuto = true; } }
+  if (!o.moneda || o.moneda === 'EUR') {
+    const s = precioSugerido(o.coste, o.categoria);
+    if (s) { o.precio = fmtPrecio(s); o.precioAuto = true; if (AJ.usarPvp && o.pvpProv && o.pvpProv > s) o.precio_anterior = fmtPrecio(o.pvpProv); }
+  }
   return o;
 }
 
+/* ---------- Leer del proveedor ---------- */
+async function leerUrl(url, pagina) {
+  const r = await fetch(`/api/leer?url=${encodeURIComponent(url)}${pagina > 1 ? '&pagina=' + pagina : ''}`, { headers: { Authorization: 'Bearer ' + session.access_token } });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'No se ha podido leer la página');
+  return d;
+}
+async function abrirEnlace(url) {
+  $('#app').innerHTML = '<div class="empty">Leyendo la página del proveedor…</div>';
+  try { const d = await leerUrl(url); if (d.tipo === 'lista') abrirLote(d); else abrirEditor(desdeImportadoConPrecio(d)); }
+  catch (e) { vista = 'importar'; pintar(); toast(e.message); }
+}
+/* El atajo lee la página tal como la ves; si el servidor consigue la ficha completa (más fotos, PVP), se usa esa. */
+async function abrirDelAtajo(d) {
+  $('#app').innerHTML = '<div class="empty">Completando los datos del producto…</div>';
+  try {
+    const x = await leerUrl(d.url);
+    if (x.tipo === 'producto' && (x.imagenes || []).length >= (d.imagenes || []).length) d = { ...d, ...x, precio: x.precio != null ? x.precio : d.precio };
+  } catch (e) { /* nos quedamos con lo que ha leído el atajo */ }
+  abrirEditor(desdeImportadoConPrecio(d));
+}
+
+/* ---------- Importar una categoría entera ---------- */
+let LOTE = null;
+const normUrl = u => { try { const x = new URL(u); return (x.hostname.replace(/^www\./, '') + x.pathname).replace(/\/$/, '').toLowerCase(); } catch (e) { return String(u || ''); } };
+const hostDe = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+function abrirLote(d) {
+  LOTE = { titulo: d.titulo || 'Productos', origen: d.origen, url: d.url, pagina: d.pagina || 1, hayMas: d.hayMas, siguiente: d.siguiente, completos: d.completos,
+    productos: [], q: '', soloSel: false, corriendo: false, opt: { cat: 'auto', estado: 'auto', stock: 1, fotos: 4, copiar: true, publicar: false, agotados: false } };
+  anadirLote(d.productos || []);
+  ed = null; vista = 'lote'; window.scrollTo(0, 0); pintar();
+}
+function anadirLote(lista) {
+  const ya = new Set(Object.values(PRIV).map(v => normUrl(v.origen_url)).filter(Boolean));
+  for (const p of lista) {
+    if (!p.url || LOTE.productos.some(x => x.url === p.url)) continue;
+    p.ya = ya.has(normUrl(p.url));
+    p.cat = adivinarCategoria((p.nombre || '') + ' ' + (p.descripcion || '').slice(0, 300));
+    p.sel = !p.ya && p.disponible !== false && p.precio > 0;
+    LOTE.productos.push(p);
+  }
+}
+const catLote = p => LOTE.opt.cat === 'auto' ? p.cat : LOTE.opt.cat;
+const estadoLote = p => LOTE.opt.estado === 'auto' ? (ESTADOS.includes(p.estado) ? p.estado : 'Nuevo') : LOTE.opt.estado;
+const visibleLote = p => (LOTE.opt.agotados || p.disponible !== false) && (!LOTE.q || p.nombre.toLowerCase().includes(LOTE.q.toLowerCase()));
+
+function pintarLote() {
+  const L = LOTE, o = L.opt;
+  const vis = L.productos.filter(visibleLote);
+  const nSel = L.productos.filter(p => p.sel && !p.ya && visibleLote(p)).length;
+  const agot = L.productos.filter(p => p.disponible === false).length;
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <div style="min-width:0"><h1 style="font-size:24px">${esc(L.titulo)}</h1><div class="small">${esc(hostDe(L.url))} · ${L.productos.length} productos leídos${agot ? ` · ${agot} agotados` : ''}</div></div>
+      <button class="btn b-ghost" id="cerrarLote" style="min-height:44px" ${L.corriendo ? 'disabled' : ''}>Cerrar</button>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:17px">Cómo importarlos</h2>
+      <div class="g2">
+        <label class="f">Categoría en tu tienda<select class="in" id="oCat"><option value="auto">Automática (según el nombre)</option>${Object.entries(CATS).map(([k, n]) => `<option value="${k}" ${o.cat === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="f">Estado<select class="in" id="oEst"><option value="auto">Según el proveedor</option>${ESTADOS.map(x => `<option ${o.estado === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+        <label class="f">Stock de cada producto<input class="in" id="oStock" inputmode="numeric" value="${o.stock}"></label>
+        <label class="f">Fotos por producto<select class="in" id="oFotos">${[1, 2, 3, 4, 6, 8].map(n => `<option ${o.fotos === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+      </div>
+      <label class="check"><input type="checkbox" id="oCopiar" ${o.copiar ? 'checked' : ''}>Copiar las fotos a mi tienda (más lento, pero no dependes del proveedor)</label>
+      <label class="check"><input type="checkbox" id="oPub" ${o.publicar ? 'checked' : ''}>Publicarlos directamente (si no, quedan como borrador)</label>
+      <label class="check"><input type="checkbox" id="oAgot" ${o.agotados ? 'checked' : ''}>Mostrar también los agotados</label>
+      <div class="small">Precio de venta: coste + ${esc(AJ.margen)} % ${esc(ivaTxt())}${AJ.usarPvp ? ' · PVP del proveedor como precio tachado' : ''}. <a href="#" id="irAj" style="font-weight:600">Cambiar en Ajustes</a></div>
+    </div>
+    <div id="prog"></div>
+    <div class="card" style="padding:12px 16px">
+      <div class="row" style="margin-bottom:6px">
+        <input class="in" id="qLote" placeholder="Buscar en la lista…" value="${esc(L.q)}" style="flex:1 1 180px">
+        <button class="btn b-ghost" id="selTodos" style="min-height:44px;padding:0 12px">Todos</button>
+        <button class="btn b-ghost" id="selNinguno" style="min-height:44px;padding:0 12px">Ninguno</button>
+      </div>
+      ${vis.map(p => { const i = L.productos.indexOf(p), c = catLote(p), pv = precioSugerido(p.precio, c); return `
+        <label class="prow" style="cursor:${p.ya ? 'default' : 'pointer'};${p.ya || p.disponible === false ? 'opacity:.55' : ''}">
+          <input type="checkbox" data-i="${i}" ${p.sel && !p.ya ? 'checked' : ''} ${p.ya || L.corriendo ? 'disabled' : ''} style="width:22px;height:22px;flex:0 0 22px;accent-color:var(--ink)">
+          ${p.imagenes && p.imagenes[0] ? `<img class="thumb" src="${esc(p.imagenes[0])}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="thumb">Sin foto</div>'}
+          <div class="pinfo">
+            <div style="font-weight:600;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(p.nombre)}</div>
+            <div class="small">Coste ${eur(p.precio)} → <strong style="color:var(--ink)">${pv ? eur(pv) : 'sin precio'}</strong>${AJ.usarPvp && p.pvp && pv && p.pvp > pv ? ` · tachado ${eur(p.pvp)}` : ''}</div>
+            <div class="small">${esc(estadoLote(p))} · ${esc(CATS[c])}${p.ya ? ' · <strong>Ya importado</strong>' : ''}${p.disponible === false ? ' · <strong>Agotado</strong>' : ''}</div>
+          </div>
+        </label>`; }).join('') || '<div class="empty">Ningún producto coincide.</div>'}
+      ${L.hayMas ? `<button class="btn b-line full" id="masLote" style="margin-top:12px" ${L.corriendo ? 'disabled' : ''}>Cargar más productos de esta categoría</button>` : ''}
+    </div>
+    <div class="sticky-save">
+      ${L.corriendo ? '<button class="btn b-danger" id="pararLote">Parar</button>' : `<button class="btn b-brand" id="impLote" ${nSel ? '' : 'disabled'}>Importar ${nSel} producto${nSel === 1 ? '' : 's'}</button>`}
+    </div>`;
+  pintarProgreso();
+
+  const re = () => { const y = window.scrollY; pintarLote(); window.scrollTo(0, y); };
+  $('#cerrarLote').onclick = () => { LOTE = null; vista = 'lista'; pintar(); };
+  $('#irAj').onclick = e => { e.preventDefault(); vista = 'ajustes'; pintar(); };
+  $('#oCat').onchange = e => { o.cat = e.target.value; re(); };
+  $('#oEst').onchange = e => { o.estado = e.target.value; re(); };
+  $('#oStock').onchange = e => { o.stock = Math.max(0, parseInt(e.target.value, 10) || 0); };
+  $('#oFotos').onchange = e => { o.fotos = +e.target.value; };
+  $('#oCopiar').onchange = e => { o.copiar = e.target.checked; };
+  $('#oPub').onchange = e => { o.publicar = e.target.checked; };
+  $('#oAgot').onchange = e => { o.agotados = e.target.checked; re(); };
+  $('#qLote').oninput = e => { L.q = e.target.value; const pos = e.target.selectionStart; re(); const q = $('#qLote'); q.focus(); q.setSelectionRange(pos, pos); };
+  $('#selTodos').onclick = () => { L.productos.filter(visibleLote).forEach(p => { if (!p.ya && p.precio > 0) p.sel = true; }); re(); };
+  $('#selNinguno').onclick = () => { L.productos.filter(visibleLote).forEach(p => p.sel = false); re(); };
+  document.querySelectorAll('[data-i]').forEach(c => c.onchange = () => { L.productos[+c.dataset.i].sel = c.checked; const n = L.productos.filter(p => p.sel && !p.ya && visibleLote(p)).length; const b = $('#impLote'); if (b) { b.disabled = !n; b.textContent = `Importar ${n} producto${n === 1 ? '' : 's'}`; } });
+  if ($('#masLote')) $('#masLote').onclick = cargarMasLote;
+  if ($('#impLote')) $('#impLote').onclick = importarLote;
+  if ($('#pararLote')) $('#pararLote').onclick = () => { L.parar = true; $('#pararLote').disabled = true; $('#pararLote').textContent = 'Parando…'; };
+}
+
+function pintarProgreso() {
+  const L = LOTE, box = $('#prog'); if (!box || !L) return;
+  if (!L.total) { box.innerHTML = ''; return; }
+  const hechos = L.hechos + L.errores.length, pc = Math.round(hechos / L.total * 100);
+  box.innerHTML = `<div class="card stack">
+    <div class="row" style="justify-content:space-between"><strong>${L.corriendo ? 'Importando…' : 'Importación terminada'}</strong><span class="small">${hechos} de ${L.total}</span></div>
+    <div style="height:10px;background:var(--soft);border-radius:999px;overflow:hidden"><div style="height:100%;width:${pc}%;background:var(--brand);transition:width .3s"></div></div>
+    <div class="small">${L.hechos} importado${L.hechos === 1 ? '' : 's'}${L.errores.length ? ` · ${L.errores.length} con error` : ''}${L.corriendo ? ' · No cierres esta pantalla' : ''}</div>
+    ${!L.corriendo && L.errores.length ? `<details><summary class="small" style="cursor:pointer">Ver errores</summary><div class="small">${L.errores.map(esc).join('<br>')}</div></details>` : ''}
+  </div>`;
+}
+
+async function cargarMasLote() {
+  const L = LOTE, b = $('#masLote'); b.disabled = true; b.textContent = 'Cargando…';
+  try {
+    const d = L.completos ? await leerUrl(L.url, L.pagina + 1) : await leerUrl(L.siguiente);
+    L.pagina = d.pagina || L.pagina + 1; L.hayMas = d.hayMas; L.siguiente = d.siguiente;
+    const antes = L.productos.length; anadirLote(d.productos || []);
+    if (L.productos.length === antes) L.hayMas = false;
+    const y = window.scrollY; pintarLote(); window.scrollTo(0, y);
+  } catch (e) { toast(e.message); b.disabled = false; b.textContent = 'Cargar más productos de esta categoría'; }
+}
+
+async function importarUno(p) {
+  const o = LOTE.opt;
+  let d = p;
+  if (!LOTE.completos) { // tiendas que no son Shopify: leemos la ficha para tener todas las fotos y la descripción
+    try { const x = await leerUrl(p.url); if (x.tipo === 'producto') d = { ...p, ...x, precio: x.precio != null ? x.precio : p.precio, imagenes: (x.imagenes || []).length ? x.imagenes : p.imagenes }; } catch (e) {}
+  }
+  const cat = catLote(p), precio = precioSugerido(d.precio, cat);
+  if (!precio) throw new Error('el proveedor no muestra precio');
+  const slug = `${slugify(d.nombre)}-${Math.random().toString(36).slice(2, 6)}`;
+  const fotos = [];
+  const fuentes = (d.imagenes || []).slice(0, o.fotos);
+  for (let k = 0; k < fuentes.length; k++) {
+    if (!o.copiar) { fotos.push(fuentes[k]); continue; }
+    try {
+      const r = await fetch('/api/imagen?url=' + encodeURIComponent(fuentes[k]), { headers: { Authorization: 'Bearer ' + session.access_token } });
+      if (!r.ok) throw new Error('foto');
+      fotos.push(await subirFoto(await r.blob(), slug, k));
+    } catch (e) { fotos.push(fuentes[k]); } // si no se puede copiar, usamos la del proveedor
+  }
+  const fila = { slug, nombre: String(d.nombre).slice(0, 250), categoria: cat, estado: estadoLote(d), marca: d.marca || null, precio,
+    precio_anterior: AJ.usarPvp && d.pvp && d.pvp > precio ? d.pvp : null, stock: o.stock, descripcion: d.descripcion || '',
+    caracteristicas: d.caracteristicas || {}, imagenes: fotos, top: false, publicado: o.publicar && fotos.length > 0 };
+  const { data, error } = await sb.from('productos').insert(fila).select('id').single();
+  if (error) throw new Error(error.message);
+  const { error: e2 } = await sb.from('productos_privado').insert({ producto_id: data.id, coste: d.precio, proveedor: hostDe(d.url), origen_url: d.url, notas: d.sku ? `Ref. proveedor: ${d.sku}` : null });
+  if (e2) throw new Error(e2.message);
+}
+
+async function importarLote() {
+  const L = LOTE, items = L.productos.filter(p => p.sel && !p.ya && visibleLote(p));
+  if (!items.length) return;
+  if (!confirm(`¿Importar ${items.length} producto${items.length === 1 ? '' : 's'}${L.opt.publicar ? ' y publicarlos' : ' como borrador'}?`)) return;
+  L.corriendo = true; L.parar = false; L.hechos = 0; L.errores = []; L.total = items.length;
+  pintarLote();
+  let i = 0;
+  const trabajador = async () => {
+    while (i < items.length && !L.parar) {
+      const p = items[i++];
+      try { await importarUno(p); p.ya = true; p.sel = false; L.hechos++; }
+      catch (e) { L.errores.push(`${String(p.nombre).slice(0, 60)}: ${e.message}`); }
+      pintarProgreso();
+    }
+  };
+  await Promise.all([trabajador(), trabajador(), trabajador()]);
+  L.corriendo = false; L.total = L.hechos + L.errores.length;
+  await cargar();
+  if (vista === 'lote' && LOTE === L) { const y = window.scrollY; pintarLote(); window.scrollTo(0, y); }
+  toast(`${L.hechos} producto${L.hechos === 1 ? '' : 's'} importado${L.hechos === 1 ? '' : 's'}${L.errores.length ? `, ${L.errores.length} con error` : ''}`);
+}
+
 function abrirEditor(x) { ed = x; window.scrollTo(0, 0); pintar(); }
+window.addEventListener('beforeunload', e => { if (LOTE && LOTE.corriendo) { e.preventDefault(); e.returnValue = ''; } });
 
 function pintarEditor() {
   const e = ed;
@@ -646,6 +848,7 @@ async function borrar() {
 
 /* ---------- Navegación ---------- */
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  if (LOTE && LOTE.corriendo) return toast('Espera a que termine la importación o pulsa Parar');
   if (ed && ed.importado && !ed.id && !confirm('¿Salir sin guardar este producto?')) return;
   ed = null; vista = b.dataset.v; pintar();
 });

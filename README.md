@@ -28,7 +28,7 @@ Si `config.js` está vacío, la tienda enseña productos de ejemplo.
 ## Cómo añadir productos
 
 - **Desde el iPhone:** en la página del producto del proveedor, en Safari, *Compartir → Añadir a EpicOutlet*.
-- **Desde el panel:** *Importar* → pega el enlace del producto.
+- **Desde el panel:** *Importar* → pega el enlace de un producto o de una categoría entera. En las categorías eliges qué productos quieres y se importan todos de golpe (en tiendas Shopify, 250 por página).
 - **A mano:** *Productos → + Nuevo*, con fotos de la galería o la cámara.
 
 En el editor revisas el nombre, pones el precio de venta, el precio tachado (PVP), el estado y el stock, y marcas *Publicado*.

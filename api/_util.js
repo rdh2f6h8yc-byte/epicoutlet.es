@@ -62,7 +62,77 @@ function buscarProducto(o) {
 }
 
 function nuevoDato(url) {
-  return { url, nombre: '', precio: null, moneda: '', imagenes: [], descripcion: '', marca: '', sku: '', caracteristicas: {} };
+  return { url, nombre: '', precio: null, pvp: null, moneda: '', imagenes: [], descripcion: '', marca: '', sku: '', caracteristicas: {}, estado: '', disponible: true };
+}
+
+// Dirección de la tienda Shopify que hay detrás (también en webs Shopify hechas a medida)
+function shopifyBase(html, url) {
+  const m = html.match(/([a-z0-9][a-z0-9-]*)\.myshopify\.com/i);
+  if (m) return 'https://' + m[1].toLowerCase() + '.myshopify.com';
+  if (/cdn\.shopify\.com\/s\/files|Shopify\.theme|shopify-section/i.test(html)) { try { return new URL(url).origin; } catch (e) {} }
+  return null;
+}
+
+// Estado del producto según etiquetas, nombre o datos estructurados
+function estadoDe(...textos) {
+  const t = textos.flat().filter(Boolean).join(' ').toLowerCase();
+  if (/reacondicionad|refurbish|renovad|reprecintad|resigilad|refurbishedcondition/.test(t)) return 'Reprecintado';
+  if (/embalaje[- ]?deteriorad|caja[- ]?abierta|open[- ]?box|deteriorad|usedcondition|damagedcondition|como[- ]nuevo|segunda[- ]mano|sin[- ]caja/.test(t)) return 'Caja abierta';
+  if (/liquidaci|fin[- ]de[- ]serie/.test(t)) return 'Liquidación';
+  return 'Nuevo';
+}
+
+// Producto en formato Shopify (products.json o /products/xxx.js) → formato EpicOutlet
+function desdeShopify(p, origen) {
+  const vs = p.variants || [];
+  const v = vs.find(x => x.available) || vs[0] || {};
+  const precio = typeof p.price === 'number' ? p.price / 100 : num(v.price);
+  const pvp = typeof p.compare_at_price === 'number' ? p.compare_at_price / 100 : num(v.compare_at_price);
+  const d = nuevoDato(origen + '/products/' + p.handle);
+  d.nombre = limpio(p.title);
+  d.precio = precio;
+  d.pvp = pvp && precio && pvp > precio ? pvp : null;
+  d.marca = limpio(p.vendor);
+  d.sku = limpio(v.sku || '');
+  d.descripcion = limpio(p.body_html != null ? p.body_html : p.description).slice(0, 4000);
+  (p.images || []).forEach(i => addImg(d, typeof i === 'string' ? i : i && i.src, origen));
+  d.estado = estadoDe(p.tags, p.title);
+  d.disponible = vs.length ? vs.some(x => x.available) : p.available !== false;
+  return d;
+}
+
+// Lista de productos de una página de categoría (datos estructurados ItemList)
+function listaDesdeHTML(html, url) {
+  const productos = [];
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+    let j; try { j = JSON.parse(m[1].trim()); } catch (e) { continue; }
+    const listas = [].concat(j, j && j['@graph'] || []).filter(x => x && [].concat(x['@type'] || []).includes('ItemList'));
+    for (const l of listas) for (const li of [].concat(l.itemListElement || [])) {
+      const it = (li && li.item) || li || {};
+      const prodUrl = it.url || it['@id'] || li.url;
+      if (!it.name && !prodUrl) continue;
+      const d = nuevoDato('');
+      try { d.url = new URL(prodUrl, url).href; } catch (e) { continue; }
+      d.nombre = limpio(it.name);
+      [].concat(it.image || []).forEach(i => addImg(d, i, url));
+      d.marca = limpio(it.brand && typeof it.brand === 'object' ? it.brand.name : it.brand);
+      const of = [].concat(it.offers || [])[0] || {};
+      d.precio = num(of.price != null ? of.price : of.lowPrice);
+      d.moneda = of.priceCurrency || '';
+      d.estado = estadoDe(of.itemCondition, it.itemCondition, it.name);
+      d.disponible = !/OutOfStock|SoldOut|Discontinued/i.test(String(of.availability || ''));
+      if (!productos.some(x => x.url === d.url)) productos.push(d);
+    }
+  }
+  // Enlace a la página siguiente
+  let siguiente = null;
+  const dec = h => h.replace(/&amp;/g, '&');
+  const rel = html.match(/<(?:link|a)[^>]+rel=["']next["'][^>]*>/i);
+  const href = rel && rel[0].match(/href=["']([^"']+)["']/i);
+  const dir = html.match(/href=["']([^"']*direction=next[^"']*)["']/i);
+  const cand = href ? href[1] : dir ? dir[1] : null;
+  if (cand) { try { siguiente = new URL(dec(cand), url).href; } catch (e) {} }
+  return { productos, siguiente };
 }
 
 function addImg(d, u, base) {
@@ -83,6 +153,8 @@ function aplicarLD(d, p, base) {
   const pr = of.price != null ? of.price : of.lowPrice != null ? of.lowPrice : ([].concat(of.offers || [])[0] || {}).price;
   if (d.precio == null && pr != null) d.precio = num(pr);
   d.moneda = d.moneda || of.priceCurrency || '';
+  d._cond = [of.itemCondition, p.itemCondition].filter(Boolean).join(' ');
+  if (of.availability && /OutOfStock|SoldOut/i.test(String(of.availability))) d.disponible = false;
   [].concat(p.additionalProperty || []).forEach(a => {
     if (a && a.name && a.value != null) d.caracteristicas[limpio(a.name)] = limpio(a.value);
   });
@@ -97,17 +169,14 @@ async function extraerHTML(html, url) {
     return [...html.matchAll(re)].map(m => { const c = m[0].match(/content=["']([^"']*)["']/i); return c ? limpio(c[1]) : ''; }).filter(Boolean);
   };
 
-  // Tiendas Shopify: ficha completa en /products/xxx.js
+  // Tiendas Shopify: ficha completa (todas las fotos, PVP, estado) en /products/xxx.js
   try {
     const u = new URL(url);
-    if (/\/products\//.test(u.pathname) && /cdn\.shopify\.com|Shopify\.theme|shopify-section/i.test(html)) {
-      const r = await fetch(u.origin + u.pathname.replace(/\/$/, '') + '.js', { headers: { 'User-Agent': UA } });
-      if (r.ok) {
-        const j = await r.json();
-        d.nombre = limpio(j.title); d.descripcion = limpio(j.description); d.marca = limpio(j.vendor);
-        d.precio = typeof j.price === 'number' ? j.price / 100 : null;
-        (j.images || []).forEach(i => addImg(d, i, base));
-      }
+    const h = u.pathname.match(/\/products\/([^/?#]+)/);
+    const sb = h && shopifyBase(html, url);
+    if (sb) {
+      const r = await fetch(sb + '/products/' + h[1] + '.js', { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+      if (r.ok) { const s = desdeShopify(await r.json(), u.origin); if (s.nombre) return s; }
     }
   } catch (e) { /* seguimos con el resto */ }
 
@@ -134,9 +203,11 @@ async function extraerHTML(html, url) {
     if (m) d.precio = num(m[1] || m[2]);
   }
   d.moneda = d.moneda || meta('product:price:currency')[0] || meta('og:price:currency')[0] || '';
+  d.estado = d.estado || estadoDe(d._cond, d.nombre);
+  delete d._cond;
   if (d.imagenes.length < 2) meta('og:image').forEach(i => addImg(d, i, base));
   d.descripcion = d.descripcion.slice(0, 4000);
   return d;
 }
 
-module.exports = { CFG, UA, esAdmin, urlSegura, extraerHTML, num, limpio, buscarProducto };
+module.exports = { CFG, UA, esAdmin, urlSegura, extraerHTML, listaDesdeHTML, shopifyBase, desdeShopify, estadoDe, num, limpio, buscarProducto };
