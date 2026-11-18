@@ -17,7 +17,6 @@ Tienda online de EpicOutlet para España: liquidaciones de stock, sobrestock, de
 
 ## Pendiente
 
-- Rellenar `[RAZÓN SOCIAL O NOMBRE DEL TITULAR]` y `[NIF / CUI]` en `EMPRESA`.
 - Conectar la pasarela de pago (botón «Finalizar compra») y poner su nombre en `[PASARELA DE PAGO]`.
 - Fotos y productos reales.
 
