@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EpicOutlet.es — Tu outlet de confianza</title>
+<meta name="description" content="Liquidaciones de stock, sobrestock, devoluciones y productos reprecintados de marcas que conoces, a precio de outlet. Envío a toda España.">
+<meta name="theme-color" content="#16161A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16161A; --ink2:#3D3D45; --muted:#5C5C64; --line:#ECECEF; --soft:#F4F4F6; --bg2:#F6F6F8;
+  --brand:#FF6A00; --brand-soft:#FFF1E7; --brand-dark:#B43C00; --ok:#1D6B3A; --ok-soft:#E3F2E8;
+  --r:22px; --head:'Space Grotesk',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+img{max-width:100%}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+h1,h2,h3{font-family:var(--head);letter-spacing:-.02em;margin:0}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+/* Barra superior */
+.topbar{background:var(--ink);color:#fff;font-size:13px;padding:10px 16px;display:flex;justify-content:center;gap:32px;flex-wrap:wrap;text-align:center}
+.topbar .hl{color:#FFB27A}
+
+/* Cabecera */
+header.site{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;gap:24px;padding:16px 0}
+.logo{font-family:var(--head);font-weight:700;font-size:28px;letter-spacing:-.02em;white-space:nowrap}
+.logo b{color:var(--brand);font-weight:700}.logo small{font-size:16px;color:#6B6B73}
+.search{flex:1;display:flex;align-items:center;background:var(--soft);border-radius:999px;padding:0 6px 0 18px;height:50px;gap:10px}
+.search input{flex:1;border:0;background:transparent;outline:none;font-size:15px;min-width:0;height:100%}
+.search button{height:38px;padding:0 20px;border-radius:999px;border:0;background:var(--ink);color:#fff;font-weight:600;font-size:14px}
+.hact{display:flex;gap:8px;align-items:center}
+.hbtn{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;font-size:14px;font-weight:500;min-height:44px}
+.hbtn.cart{background:var(--brand-soft);font-weight:600}
+.badge{min-width:22px;height:22px;border-radius:999px;background:var(--brand);color:var(--ink);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+.cats{display:flex;gap:6px;padding:0 0 12px;overflow-x:auto;scrollbar-width:none;font-size:14px;font-weight:500}
+.cats::-webkit-scrollbar{display:none}
+.cats a{padding:8px 14px;border-radius:999px;white-space:nowrap}
+.cats a:hover{background:var(--soft)}
+.cats a.on{background:var(--ink);color:#fff}
+.cats a.hot{color:var(--brand-dark);font-weight:600}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 26px;border-radius:14px;border:0;font-weight:600;font-size:16px;transition:transform .15s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-brand{background:var(--brand);color:var(--ink);font-weight:700}.btn-brand:hover{background:#FF7F24}
+.btn-dark{background:var(--ink);color:#fff}.btn-dark:hover{background:#2B2B31}
+.btn-line{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.btn-block{width:100%}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;padding:32px 0 20px}
+.hero-main{background:var(--brand-soft);border-radius:28px;padding:56px 48px;display:flex;flex-direction:column;gap:22px;justify-content:center}
+.pill{align-self:flex-start;background:#fff;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--brand-dark)}
+.hero h1{font-size:clamp(40px,5vw,62px);line-height:1.02;letter-spacing:-.03em}
+.hero p{margin:0;font-size:18px;line-height:1.55;color:var(--ink2);max-width:480px}
+.hero-side{display:grid;grid-template-rows:auto 1fr;gap:24px}
+.drop{background:var(--ink);color:#fff;border-radius:28px;padding:26px 30px;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.drop .k{font-size:13px;color:#FFB27A;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+.drop .s{font-size:15px;color:#C9C9CF;margin-top:6px}
+.cd{display:flex;gap:10px}
+.cd div{background:#26262C;border-radius:14px;padding:10px 12px;text-align:center;min-width:62px}
+.cd div:last-child{background:var(--brand);color:var(--ink)}
+.cd b{display:block;font-family:var(--head);font-size:30px}
+.cd span{font-size:11px;opacity:.75}
+.feat{background:#E8EEF6;border-radius:28px;padding:30px;display:flex;align-items:center;gap:28px;transition:box-shadow .2s,transform .2s}
+.feat:hover{box-shadow:0 12px 30px rgba(22,22,26,.1);transform:translateY(-2px)}
+.feat .ph{flex:0 0 170px;height:170px;border-radius:24px;background:#fff}
+.feat h3{font-size:24px;line-height:1.2;font-weight:600}
+
+/* Garantías */
+.trust{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:8px 0 40px}
+.trust div{display:flex;gap:14px;align-items:center;padding:18px 20px;border:1px solid var(--line);border-radius:18px}
+.trust strong{display:block;font-size:15px}.trust span{font-size:13px;color:var(--muted)}
+.trust svg{flex:0 0 auto;color:var(--brand-dark)}
+
+/* Secciones */
+section.blk{padding:28px 0 48px}
+.shead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.shead h2{font-size:36px}
+.shead p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.link{font-weight:600;font-size:15px;text-decoration:underline}
+
+.catgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:14px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 10px;border-radius:22px;font-weight:600;font-size:14px;text-align:center;transition:transform .2s,box-shadow .2s}
+.cat:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(22,22,26,.08)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid #D6D6DB;background:#fff;font-size:14px;font-weight:500}
+.chip:hover{border-color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+
+/* Tarjeta de producto */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.card{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;background:#fff;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 12px 30px rgba(22,22,26,.10);transform:translateY(-2px)}
+.ph{position:relative;display:flex;align-items:center;justify-content:center}
+.card .ph{height:220px}
+.off{position:absolute;top:14px;left:14px;background:var(--brand);color:var(--ink);font-size:13px;font-weight:700;padding:4px 10px;border-radius:8px}
+.cond{display:inline-block;font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px}
+.ph .cond{position:absolute;top:14px;right:14px;background:#fff}
+.c-nuevo{background:var(--ok-soft);color:var(--ok)}
+.c-caja{background:#E6EEF8;color:#1F4E86}
+.c-repr{background:#F1ECFA;color:#55348F}
+.c-liq{background:var(--brand-soft);color:var(--brand-dark)}
+.cbody{padding:18px;display:flex;flex-direction:column;gap:8px;flex:1}
+.cname{font-weight:600;font-size:16px;line-height:1.35}
+.price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.price b{font-size:22px}
+.price s{font-size:14px;color:#6B6B73}
+.save{font-size:13px;color:var(--ok);font-weight:600}
+.low{font-size:13px;color:var(--brand-dark);font-weight:600}
+.cbody .btn{min-height:46px;font-size:15px;margin-top:auto}
+
+/* Estados */
+.states{background:var(--bg2);padding:64px 0}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:26px}
+.sgrid div{background:#fff;border-radius:var(--r);padding:26px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.sgrid h3{font-family:Inter,sans-serif;font-size:18px;letter-spacing:0}
+.sgrid p{margin:0;color:var(--muted);font-size:15px;line-height:1.5}
+
+.promo{background:var(--brand);border-radius:28px;padding:48px;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
+.promo h2{font-size:44px;line-height:1.05}
+.promo p{margin:12px 0 0;font-size:18px}
+
+.news{border:1px solid var(--line);border-radius:28px;padding:44px 48px;display:flex;justify-content:space-between;align-items:center;gap:28px;flex-wrap:wrap}
+.news h2{font-size:30px}
+.news p{margin:8px 0 0;color:var(--muted)}
+.news form{display:flex;gap:10px;flex:1 1 380px;max-width:520px;flex-wrap:wrap}
+.input{flex:1 1 200px;min-height:52px;border-radius:14px;border:1px solid #C9C9CF;padding:0 18px;font-size:15px;background:#fff}
+
+/* Categoría */
+.crumbs{font-size:14px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;padding-top:22px}
+.crumbs a:hover{text-decoration:underline}
+.layout{display:flex;gap:32px;align-items:flex-start;padding-bottom:72px}
+.filters{flex:0 0 250px;display:flex;flex-direction:column;gap:26px;position:sticky;top:150px}
+.filters fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.filters legend{font-weight:700;font-size:15px;margin-bottom:10px}
+.check{display:flex;align-items:center;gap:12px;font-size:15px;min-height:34px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--ink)}
+.check em{margin-left:auto;font-style:normal;font-size:13px;color:var(--muted)}
+.rbtn{min-height:44px;text-align:left;padding:0 14px;border-radius:12px;border:1px solid #D6D6DB;background:#fff;font-size:14px}
+.rbtn.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.help{background:var(--brand-soft);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.results{flex:1;min-width:0}
+.sel{min-height:44px;border-radius:12px;border:1px solid #C9C9CF;padding:0 14px;font-size:14px;background:#fff}
+.empty{border:1px dashed #C9C9CF;border-radius:var(--r);padding:48px;text-align:center;color:var(--muted)}
+.mfilter{display:none}
+
+/* Producto */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:48px;padding:20px 0 40px}
+.gal{display:flex;flex-direction:column;gap:14px}
+.gal .main{aspect-ratio:1/1;border-radius:28px}
+.gal .view{position:absolute;bottom:18px;left:18px;background:#fff;font-size:13px;font-weight:500;padding:6px 12px;border-radius:10px}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.thumbs button{aspect-ratio:1/1;border-radius:16px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:0}
+.thumbs button.on{border:2px solid var(--ink)}
+.pinfo{display:flex;flex-direction:column;gap:20px}
+.pinfo h1{font-size:clamp(28px,3vw,40px);line-height:1.1}
+.pprice b{font-size:40px;letter-spacing:-.02em}
+.pprice s{font-size:20px}
+.note{font-size:13px;color:var(--muted);margin-top:-12px}
+.buy{display:flex;gap:12px;flex-wrap:wrap}
+.qty{display:flex;align-items:center;border:1px solid #C9C9CF;border-radius:14px;overflow:hidden}
+.qty button{width:50px;height:54px;border:0;background:#fff;font-size:22px}
+.qty button:hover{background:var(--soft)}
+.qty span{min-width:38px;text-align:center;font-weight:700;font-size:17px}
+.buy .btn{flex:1 1 220px;min-height:56px;font-size:17px}
+.perks{border:1px solid var(--line);border-radius:20px;padding:4px 20px}
+.perks div{display:flex;gap:14px;align-items:center;padding:14px 0;font-size:15px;border-bottom:1px solid var(--line)}
+.perks div:last-child{border:0}
+.perks svg{color:var(--brand-dark);flex:0 0 auto}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{min-height:48px;padding:0 16px;border:0;background:transparent;font-size:15px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-color:var(--ink)}
+.tabp{padding:18px 0;font-size:15px;line-height:1.65;color:var(--ink2)}
+.tabp dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin:0}
+.tabp dt{color:var(--muted)}.tabp dd{margin:0;font-weight:500;color:var(--ink)}
+
+/* Carrito */
+.cartpage{background:var(--bg2);min-height:70vh;padding:32px 0 72px}
+.clayout{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.citems{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.citem{background:#fff;border-radius:var(--r);padding:16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.citem .ph{flex:0 0 110px;height:110px;border-radius:16px}
+.citem .info{flex:1 1 200px;display:flex;flex-direction:column;gap:6px}
+.citem .tot{min-width:100px;text-align:right;font-weight:700;font-size:19px}
+.citem .qty button{width:44px;height:44px;font-size:20px}
+.del{width:44px;height:44px;border:0;background:transparent;border-radius:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.del:hover{background:var(--soft);color:var(--ink)}
+.summary{flex:1 1 320px;max-width:400px;background:#fff;border-radius:var(--r);padding:26px;display:flex;flex-direction:column;gap:14px;position:sticky;top:150px}
+.row{display:flex;justify-content:space-between;font-size:15px}
+.saving{background:var(--ok-soft);color:var(--ok);padding:12px 14px;border-radius:12px;font-weight:700}
+.total{border-top:1px solid var(--line);padding-top:16px;align-items:baseline}
+.total b{font-size:30px;letter-spacing:-.02em}
+.pay{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;font-size:12px}
+.pay span{border:1px solid #D6D6DB;border-radius:6px;padding:3px 8px}
+.msg{background:var(--brand-soft);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--ink2)}
+
+/* Pie */
+footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
+.fgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px}
+.fgrid h4{color:#fff;margin:0 0 12px;font-size:15px}
+.fgrid a{display:block;font-size:14px;padding:5px 0}
+.fgrid a:hover{color:#fff}
+.fbot{margin-top:40px;padding-top:24px;border-top:1px solid #2E2E35;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
+.fbot .pay span{border-color:#3A3A42}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:14px 22px;border-radius:14px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .3s;z-index:50;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
+.toast.show{transform:translate(-50%,0)}
+
+
+/* Páginas de información */
+.infolayout{display:flex;gap:40px;align-items:flex-start;padding:20px 0 72px}
+.infonav{flex:0 0 230px;display:flex;flex-direction:column;gap:2px;position:sticky;top:150px}
+.infonav a{padding:10px 14px;border-radius:12px;font-size:15px;color:var(--ink2)}
+.infonav a:hover{background:var(--soft)}
+.infonav a.on{background:var(--ink);color:#fff;font-weight:600}
+.doc{flex:1;min-width:0;max-width:760px;font-size:16px;line-height:1.7;color:var(--ink2)}
+.doc h1{font-size:clamp(32px,4vw,46px);letter-spacing:-.03em;color:var(--ink);margin-bottom:18px}
+.doc h2{font-size:22px;color:var(--ink);margin:32px 0 8px}
+.doc p{margin:0 0 14px}
+.doc .lead{font-size:19px;color:var(--ink)}
+.doc ul{margin:0 0 14px;padding-left:22px}
+.doc strong{color:var(--ink)}
+.doc details{border:1px solid var(--line);border-radius:16px;padding:0 20px;margin-bottom:10px}
+.doc summary{cursor:pointer;font-weight:600;color:var(--ink);padding:18px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.doc summary::after{content:'+';font-size:22px;line-height:1;color:var(--muted)}
+.doc details[open] summary::after{content:'−'}
+.doc summary::-webkit-details-marker{display:none}
+.infocards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:22px 0}
+.infocards div{background:var(--bg2);border-radius:16px;padding:16px 18px;color:var(--ink);font-weight:500;word-break:break-word}
+.infocards .k{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px}
+.cform{display:flex;flex-direction:column;gap:14px;margin-top:10px}
+.cform label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--ink)}
+.cform .input{font-weight:400}
+.cform textarea.input{padding:14px 18px;resize:vertical}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.small{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:760px){
+  .infolayout{flex-direction:column;gap:16px}
+  .infonav{position:static;flex:none;width:100%;flex-direction:row;overflow-x:auto;gap:6px;scrollbar-width:none}
+  .infonav a{white-space:nowrap;border:1px solid var(--line);border-radius:999px;font-size:14px;padding:8px 14px}
+  .f2{grid-template-columns:1fr}
+  .doc .lead{font-size:17px}
+}
+/* Navegación inferior móvil */
+.bnav{display:none}
+
+@media (max-width:1100px){
+  .catgrid{grid-template-columns:repeat(4,1fr)}
+  .trust,.sgrid{grid-template-columns:repeat(2,1fr)}
+  .hero{grid-template-columns:1fr}
+  .fgrid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .wrap{padding:0 16px}
+  .topbar{font-size:12px;gap:14px}
+  .topbar span:nth-child(1){display:none}
+  .hrow{flex-wrap:wrap;gap:12px;padding:12px 0}
+  .logo{font-size:24px;flex:1}
+  .search{order:3;flex:1 1 100%;height:48px}
+  .search button{display:none}
+  .hbtn.acc{display:none}
+  .hbtn .txt{display:none}
+  .hero{padding-top:16px}
+  .hero-main{padding:30px 22px}
+  .hero p{font-size:16px}
+  .drop{padding:20px}
+  .cd{width:100%}.cd div{flex:1;min-width:0}
+  .feat{padding:20px;gap:16px}
+  .feat .ph{flex-basis:110px;height:110px}
+  .feat h3{font-size:18px}
+  .trust{grid-template-columns:1fr 1fr;gap:10px}
+  .trust div{padding:14px;flex-direction:column;align-items:flex-start;gap:8px}
+  .shead h2{font-size:28px}
+  .catgrid{gap:10px}
+  .cat{padding:14px 4px;font-size:12px;gap:8px}
+  .cat svg{width:30px;height:30px}
+  .grid{grid-template-columns:1fr 1fr;gap:12px}
+  .card .ph{height:150px}
+  .card .ph svg{width:56px;height:56px}
+  .off{top:10px;left:10px;font-size:12px}
+  .ph .cond{display:none}
+  .cbody{padding:12px;gap:6px}
+  .cname{font-size:13px}
+  .price b{font-size:17px}.price s{font-size:12px}
+  .save{display:none}
+  .cbody .btn{min-height:44px;font-size:14px;padding:0 10px}
+  .cbody .btn svg{display:none}
+  .sgrid{grid-template-columns:1fr}
+  .states{padding:44px 0}
+  .promo{padding:30px 24px}.promo h2{font-size:32px}
+  .news{padding:28px 22px}
+  .layout{flex-direction:column}
+  .filters{position:static;flex:none;width:100%;display:none}
+  .filters.open{display:flex}
+  .mfilter{display:inline-flex}
+  .pgrid{grid-template-columns:1fr;gap:24px}
+  .pprice b{font-size:32px}
+  .summary{position:static;max-width:none}
+  .citem .tot{min-width:0;text-align:left}
+  .fgrid{grid-template-columns:1fr 1fr;gap:24px}
+  body{padding-bottom:76px}
+  .bnav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:30}
+  .bnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--muted);min-height:50px;position:relative}
+  .bnav a.on{color:var(--ink);font-weight:600}
+  .bnav .badge{position:absolute;top:2px;left:calc(50% + 4px);min-width:18px;height:18px;font-size:10px}
+  .toast{bottom:90px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span>Envío a toda España · Entrega en 1–3 días laborables</span>
+  <span class="hl">Devolución en 14 días</span>
+  <span>Pago 100 % seguro</span>
+</div>
+
+<header class="site">
+  <div class="wrap">
+    <div class="hrow">
+      <a href="#/" class="logo" aria-label="EpicOutlet.es, inicio">Epic<b>Outlet</b><small>.es</small></a>
+      <form class="search" id="searchForm" role="search">
+        <label for="q" class="sr">Buscar productos</label>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B6B73" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Busca relojes, juguetes, hogar…" autocomplete="off">
+        <button type="submit">Buscar</button>
+      </form>
+      <div class="hact">
+        <a href="#/cuenta" class="hbtn acc">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+          <span class="txt">Mi cuenta</span>
+        </a>
+        <a href="#/carrito" class="hbtn cart" aria-label="Carrito">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14l-1.5 11a2 2 0 0 1-2 1.7h-7A2 2 0 0 1 6.5 18L5 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+          <span class="txt">Carrito</span>
+          <span class="badge" data-count>0</span>
+        </a>
+      </div>
+    </div>
+    <nav class="cats" id="catnav" aria-label="Categorías"></nav>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer class="site">
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <div class="logo" style="color:#fff;font-size:26px">Epic<b>Outlet</b><small style="color:#A9A9B1">.es</small></div>
+        <p style="font-size:14px;line-height:1.6;margin:14px 0 0">Productos interesantes, precios más bajos y algo nuevo en cada visita. Seleccionamos liquidaciones, sobrestock, devoluciones y reprecintados.</p>
+      </div>
+      <div><h4>Tienda</h4><a href="#/c/novedades">Novedades</a><a href="#/c/top">Top ventas</a><a href="#/c/liquidaciones">Liquidaciones</a><a href="#/info/historia">Nuestra historia</a></div>
+      <div><h4>Ayuda</h4><a href="#/info/faq">Preguntas frecuentes</a><a href="#/info/envios">Envíos</a><a href="#/info/devoluciones">Devoluciones</a><a href="#/info/pagos">Métodos de pago</a><a href="#/info/contacto">Contacto</a></div>
+      <div><h4>Legal</h4><a href="#/info/aviso-legal">Aviso legal</a><a href="#/info/terminos">Términos y condiciones</a><a href="#/info/privacidad">Privacidad</a><a href="#/info/cookies">Cookies</a></div>
+    </div>
+    <div class="fbot">
+      <span>© <span id="year"></span> EpicOutlet.es</span>
+      <span class="pay"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Google Pay</span></span>
+      <span style="display:flex;gap:16px"><a href="https://www.facebook.com/profile.php?id=61550361555714" target="_blank" rel="noopener">Facebook</a><a href="#/info/contacto">suportepicoutlet@gmail.com</a></span>
+    </div>
+  </div>
+</footer>
+
+<nav class="bnav" id="bnav" aria-label="Navegación principal">
+  <a href="#/" data-r="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 4l9 7M5 10v10h14V10"/></svg>Inicio</a>
+  <a href="#/c/todo" data-r="cat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Categorías</a>
+  <a href="#/carrito" data-r="cart"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14l-1.5 11a2 2 0 0 1-2 1.7h-7A2 2 0 0 1 6.5 18L5 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>Carrito<span class="badge" data-count>0</span></a>
+  <a href="#/cuenta" data-r="acc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Cuenta</a>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===========================================================
+   DATOS DE LA TIENDA (de ejemplo)
+   Para cambiar productos, edita esta lista. Más adelante se
+   puede cargar desde una base de datos o un archivo JSON.
+   =========================================================== */
+const CATS = {
+  relojes:   { name: 'Relojes',         bg: '#E8EEF6', icon: 'M9 3h6l1 4M9 3 8 7m0 10 1 4h6l1-4M12 9v3l2 1M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z' },
+  hogar:     { name: 'Hogar',           bg: '#EEF3EA', icon: 'M3 11 12 4l9 7M5 10v10h14V10M10 20v-5h4v5' },
+  bebe:      { name: 'Bebé y juguetes', bg: '#FBEFE3', icon: 'M8 6a2 2 0 1 0-3 3M16 6a2 2 0 1 1 3 3M12 20a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM10 12h.01M14 12h.01M10 16c1 1 3 1 4 0' },
+  mascotas:  { name: 'Mascotas',        bg: '#F6ECEF', icon: 'M12 14c-3 0-5 2.5-5 4.5S9 21 12 21s5-.5 5-2.5S15 14 12 14ZM4.5 11a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0M16.5 11a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0M7.5 7a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0M13.5 7a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0' },
+  deporte:   { name: 'Deporte',         bg: '#E7F1F3', icon: 'M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12' },
+  tecnologia:{ name: 'Tecnología',      bg: '#ECEBF5', icon: 'M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4' },
+  belleza:   { name: 'Belleza',         bg: '#F7F0E6', icon: 'M10 3h4v3h-4zM8 6h8l1 4v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l1-4Z' }
+};
+const LIQ_ICON = 'M20 12 12 20 4 12V4h8l8 8ZM8 8h.01';
+
+const CONDS = {
+  'Nuevo':        { cls: 'c-nuevo', title: 'Precintado de fábrica', text: 'Liquidaciones de stock y sobrestock. Producto sin abrir, con su embalaje original.' },
+  'Caja abierta': { cls: 'c-caja',  title: 'Nuevo, embalaje abierto', text: 'Devoluciones sin uso. El producto está completo; la caja puede tener marcas.' },
+  'Reprecintado': { cls: 'c-repr',  title: 'Revisado y precintado', text: 'Producto devuelto que se ha comprobado y vuelto a precintar antes de la venta.' },
+  'Liquidación':  { cls: 'c-liq',   title: 'Últimas unidades', text: 'Fin de serie al mejor precio. Cuando se acaba, no se repone.' }
+};
+
+const PRODUCTS = [
+  { id: 1,  name: 'Reloj automático de acero, esfera azul, 41 mm', cat: 'relojes', cond: 'Nuevo', price: 219.90, old: 399.00, stock: 3, top: 1, isNew: 1,
+    desc: 'Reloj de movimiento automático con caja de acero inoxidable de 41 mm y esfera azul. Procede de sobrestock: nuevo, sin usar y con su caja original.',
+    specs: { 'Movimiento': 'Automático', 'Diámetro': '41 mm', 'Material': 'Acero inoxidable', 'Resistencia al agua': '[DATO]' } },
+  { id: 2,  name: 'Reloj cronógrafo negro, 44 mm', cat: 'relojes', cond: 'Liquidación', price: 119.00, old: 225.00, stock: 1, top: 1,
+    desc: 'Cronógrafo de cuarzo con acabado negro mate y correa de silicona. Fin de serie.', specs: { 'Movimiento': 'Cuarzo', 'Diámetro': '44 mm', 'Correa': 'Silicona' } },
+  { id: 3,  name: 'Reloj de cuarzo plateado y negro, correa de acero', cat: 'relojes', cond: 'Caja abierta', price: 89.00, old: 149.00, stock: 6,
+    desc: 'Reloj elegante de cuarzo con brazalete de acero. Devolución sin uso, completo.', specs: { 'Movimiento': 'Cuarzo', 'Diámetro': '40 mm', 'Correa': 'Acero' } },
+  { id: 4,  name: 'Reloj de buceo 200 m, bisel giratorio', cat: 'relojes', cond: 'Nuevo', price: 169.00, old: 289.00, stock: 7, isNew: 1,
+    desc: 'Reloj de buceo con bisel giratorio unidireccional y agujas luminiscentes.', specs: { 'Movimiento': 'Cuarzo', 'Diámetro': '42 mm', 'Resistencia al agua': '200 m' } },
+  { id: 5,  name: 'Osito decorativo de rosas artificiales, 25 cm', cat: 'hogar', cond: 'Nuevo', price: 29.90, old: 57.90, stock: 12, top: 1,
+    desc: 'Osito hecho con rosas artificiales, ideal para regalar. Presentado en caja.', specs: { 'Altura': '25 cm', 'Material': 'Espuma' } },
+  { id: 6,  name: 'Manta-capa calefactable con capucha, USB, 3 niveles', cat: 'hogar', cond: 'Reprecintado', price: 34.90, old: 59.90, stock: 2, top: 1, isNew: 1,
+    desc: 'Manta-capa con capucha y calefacción por USB con 3 niveles de temperatura.', specs: { 'Alimentación': 'USB', 'Niveles': '3 (45–65 °C)' } },
+  { id: 7,  name: 'Mordedor de silicona para bebé, forma de mando', cat: 'bebe', cond: 'Nuevo', price: 12.90, old: 19.90, stock: 20, top: 1,
+    desc: 'Mordedor de silicona alimentaria en forma de mando a distancia.', specs: { 'Material': 'Silicona alimentaria', 'Edad': '[DATO]' } },
+  { id: 8,  name: 'Set de 2 pelotas interactivas para perro, con sonido', cat: 'mascotas', cond: 'Caja abierta', price: 13.90, old: 24.90, stock: 9, top: 1,
+    desc: 'Dos pelotas que rebotan y emiten sonido para mantener activo a tu perro.', specs: { 'Unidades': '2', 'Sonido': 'Sí' } },
+  { id: 9,  name: 'Máscara térmica para snowboard y ciclismo', cat: 'deporte', cond: 'Nuevo', price: 18.90, old: 34.90, stock: 15, top: 1, isNew: 1,
+    desc: 'Máscara facial térmica y transpirable para deportes de invierno y bici.', specs: { 'Talla': 'Única', 'Uso': 'Snowboard, ciclismo' } },
+  { id: 10, name: 'Memoria RAM DDR5 64 GB (2×32 GB) 6400 MHz', cat: 'tecnologia', cond: 'Caja abierta', price: 189.00, old: 249.00, stock: 2,
+    desc: 'Kit de memoria DDR5 de alto rendimiento. Embalaje abierto, sin uso.', specs: { 'Capacidad': '64 GB (2×32)', 'Velocidad': '6400 MHz' } },
+  { id: 11, name: 'Bebida isotónica, pack 12 × 500 ml', cat: 'deporte', cond: 'Liquidación', price: 17.90, old: 32.90, stock: 4, isNew: 1,
+    desc: 'Pack de 12 botellas de bebida isotónica. Liquidación de stock.', specs: { 'Contenido': '12 × 500 ml', 'Consumo preferente': '[FECHA]' } },
+  { id: 12, name: 'Desodorante en barra para hombre, 50 ml', cat: 'belleza', cond: 'Liquidación', price: 1.90, old: 4.50, stock: 30,
+    desc: 'Desodorante en barra de larga duración. Últimas unidades.', specs: { 'Contenido': '50 ml' } }
+];
+
+/* ===========================================================
+   UTILIDADES
+   =========================================================== */
+const $ = (s, el = document) => el.querySelector(s);
+const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const pct = p => Math.round((1 - p.price / p.old) * 100);
+const icon = (d, size = 24, sw = 1.3) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+const byId = id => PRODUCTS.find(p => p.id === id);
+const condTag = c => `<span class="cond ${CONDS[c].cls}">${c}</span>`;
+
+/* Carrito guardado en el navegador */
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem('eo_cart') || '[]'); } catch (e) { return this._mem || []; } },
+  set(v) { this._mem = v; try { localStorage.setItem('eo_cart', JSON.stringify(v)); } catch (e) {} }
+};
+let cart = store.get();
+function cartCount() { return cart.reduce((a, i) => a + i.qty, 0); }
+function updateBadges() { document.querySelectorAll('[data-count]').forEach(b => b.textContent = cartCount()); }
+function addToCart(id, qty = 1) {
+  const p = byId(id); const line = cart.find(i => i.id === id);
+  if (line) line.qty = Math.min(p.stock, line.qty + qty); else cart.push({ id, qty: Math.min(p.stock, qty) });
+  store.set(cart); updateBadges();
+  toast(`Añadido: ${p.name}`);
+}
+let tt;
+function toast(msg) {
+  const t = $('#toast');
+  t.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF6A00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>${msg}`;
+  t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* Tarjeta de producto */
+function card(p) {
+  const c = CATS[p.cat];
+  return `<article class="card">
+    <a href="#/p/${p.id}" class="ph" style="background:${c.bg}">${icon(c.icon, 84, 1.2)}
+      <span class="off">−${pct(p)} %</span>${condTag(p.cond)}</a>
+    <div class="cbody">
+      <a href="#/p/${p.id}" class="cname">${p.name}</a>
+      <div class="price"><b>${eur(p.price)}</b><s>${eur(p.old)}</s></div>
+      ${p.stock <= 3 ? `<div class="low">Solo quedan ${p.stock}</div>` : `<div class="save">Ahorras ${eur(p.old - p.price)}</div>`}
+      <button class="btn btn-dark" data-add="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir</button>
+    </div></article>`;
+}
+
+/* Menú de categorías */
+function renderCatnav(active) {
+  const links = [['novedades', 'Novedades'], ['top', 'Top ventas'], ['liquidaciones', 'Liquidaciones', 'hot'],
+    ...Object.entries(CATS).map(([k, v]) => [k, v.name])];
+  $('#catnav').innerHTML = links.map(([k, n, cls]) => `<a href="#/c/${k}" class="${cls || ''} ${active === k ? 'on' : ''}">${n}</a>`).join('');
+}
+
+/* ===========================================================
+   PÁGINAS
+   =========================================================== */
+let homeFilter = 'todo';
+let cdTimer;
+const dropTarget = Date.now() + ((1 * 24 + 20) * 60 + 12) * 60000; // [FECHA DEL PRÓXIMO DROP]
+
+function pageHome() {
+  const f = PRODUCTS[0], fc = CATS[f.cat];
+  const filters = [['todo', 'Todo'], ['relojes', 'Relojes'], ['hogar', 'Hogar'], ['bebe', 'Bebé'], ['mascotas', 'Mascotas'], ['deporte', 'Deporte']];
+  const tops = PRODUCTS.filter(p => p.top && (homeFilter === 'todo' || p.cat === homeFilter));
+  return `
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-main">
+        <span class="pill">Tu outlet de confianza</span>
+        <h1>Lo bueno,<br>a precio de outlet.</h1>
+        <p>Liquidaciones de stock, sobrestock, devoluciones y productos reprecintados de marcas que conoces. Cada ficha te dice el estado exacto del producto.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a href="#/c/todo" class="btn btn-brand">Ver ofertas</a>
+          <a href="#estados" class="btn btn-line" data-scroll>Cómo funciona</a>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="drop">
+          <div><div class="k">Próximo drop de novedades</div><div class="s">Nuevos lotes en cuanto llegan. Unidades limitadas.</div></div>
+          <div class="cd" id="cd"></div>
+        </div>
+        <a href="#/p/${f.id}" class="feat">
+          <div class="ph" style="background:#fff">${icon(fc.icon, 90, 1.1)}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span class="off" style="position:static;align-self:flex-start">−${pct(f)} %</span>
+            <div style="font-size:13px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em">Oferta destacada</div>
+            <h3>${f.name}</h3>
+            <div class="price"><b style="font-size:26px">${eur(f.price)}</b><s>${eur(f.old)}</s></div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="trust" aria-label="Garantías">
+      <div><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><div><strong>Envío a toda España</strong><span>Entrega en 1–3 días laborables</span></div></div>
+      <div><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg><div><strong>Devolución en 14 días</strong><span>Sin dar explicaciones</span></div></div>
+      <div><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><div><strong>Pago seguro</strong><span>Tarjeta, Apple Pay, Google Pay</span></div></div>
+      <div><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><div><strong>Estado siempre indicado</strong><span>Sabes lo que compras</span></div></div>
+    </section>
+
+    <section class="blk" style="padding-top:8px">
+      <div class="shead"><h2>Compra por categoría</h2><a href="#/c/todo" class="link">Ver todo</a></div>
+      <div class="catgrid">
+        ${Object.entries(CATS).map(([k, c]) => `<a href="#/c/${k}" class="cat" style="background:${c.bg}">${icon(c.icon, 44, 1.5)}${c.name}</a>`).join('')}
+        <a href="#/c/liquidaciones" class="cat" style="background:#FFF1E7">${icon(LIQ_ICON, 44, 1.5)}Liquidaciones</a>
+      </div>
+    </section>
+
+    <section class="blk">
+      <div class="shead">
+        <div><h2>Top ventas</h2><p>Lo que más se está llevando la gente esta semana.</p></div>
+        <div class="chips" role="group" aria-label="Filtrar top ventas">
+          ${filters.map(([k, n]) => `<button class="chip ${homeFilter === k ? 'on' : ''}" data-hf="${k}" aria-pressed="${homeFilter === k}">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="grid">${tops.length ? tops.map(card).join('') : '<div class="empty" style="grid-column:1/-1">Pronto habrá productos en esta categoría.</div>'}</div>
+    </section>
+  </div>
+
+  <section class="states" id="estados">
+    <div class="wrap">
+      <h2 style="font-size:36px">Sabes exactamente lo que compras</h2>
+      <p style="margin:10px 0 0;color:var(--muted);font-size:16px;max-width:640px">Cada producto lleva una etiqueta con su estado real. Sin sorpresas al abrir el paquete.</p>
+      <div class="sgrid">${Object.entries(CONDS).map(([k, c]) => `<div>${condTag(k)}<h3>${c.title}</h3><p>${c.text}</p></div>`).join('')}</div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="blk" style="padding-top:56px">
+      <div class="promo">
+        <div style="max-width:640px"><h2>Liquidaciones de stock</h2><p>Precios mínimos en fines de serie. Cuando se acaba, se acaba.</p></div>
+        <a href="#/c/liquidaciones" class="btn btn-dark">Ver liquidaciones</a>
+      </div>
+    </section>
+    <section class="blk" style="padding-top:0;padding-bottom:72px">
+      <div class="news">
+        <div style="max-width:520px"><h2>Entérate del próximo drop antes que nadie</h2><p>Un correo cuando lleguen lotes nuevos. Nada de spam.</p></div>
+        <form id="newsForm">
+          <label for="email" class="sr">Tu correo electrónico</label>
+          <input id="email" class="input" type="email" required placeholder="tu@correo.com">
+          <button class="btn btn-dark" type="submit">Suscribirme</button>
+        </form>
+      </div>
+    </section>
+  </div>`;
+}
+
+function tickCountdown() {
+  const el = $('#cd'); if (!el) return clearInterval(cdTimer);
+  const s = Math.max(0, Math.floor((dropTarget - Date.now()) / 1000));
+  const pad = n => String(n).padStart(2, '0');
+  el.innerHTML = [[Math.floor(s / 86400), 'días'], [Math.floor(s % 86400 / 3600), 'horas'], [Math.floor(s % 3600 / 60), 'min'], [s % 60, 'seg']]
+    .map(([v, l]) => `<div><b>${pad(v)}</b><span>${l}</span></div>`).join('');
+}
+
+/* Categoría */
+const catState = { conds: new Set(Object.keys(CONDS)), range: 'all', sort: 'desc', q: '' };
+const RANGES = [['all', 'Todos los precios', 0, Infinity], ['a', 'Hasta 30 €', 0, 30], ['b', '30 € – 150 €', 30, 150], ['c', 'Más de 150 €', 150, Infinity]];
+
+function catList(key) {
+  let list = PRODUCTS;
+  if (key === 'novedades') list = list.filter(p => p.isNew);
+  else if (key === 'top') list = list.filter(p => p.top);
+  else if (key === 'liquidaciones') list = list.filter(p => p.cond === 'Liquidación');
+  else if (CATS[key]) list = list.filter(p => p.cat === key);
+  if (catState.q) { const q = catState.q.toLowerCase(); list = list.filter(p => p.name.toLowerCase().includes(q)); }
+  return list;
+}
+function catTitle(key) {
+  return { novedades: 'Novedades', top: 'Top ventas', liquidaciones: 'Liquidaciones', todo: 'Todos los productos', buscar: `Resultados para “${catState.q}”` }[key] || CATS[key]?.name || 'Productos';
+}
+function pageCat(key) {
+  const base = catList(key);
+  const r = RANGES.find(x => x[0] === catState.range);
+  let list = base.filter(p => catState.conds.has(p.cond) && p.price >= r[2] && p.price < r[3]);
+  list = [...list].sort((a, b) => catState.sort === 'asc' ? a.price - b.price : catState.sort === 'hi' ? b.price - a.price : pct(b) - pct(a));
+  return `<div class="wrap">
+    <nav class="crumbs" aria-label="Ruta"><a href="#/">Inicio</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">${catTitle(key)}</span></nav>
+    <div class="shead" style="margin:14px 0 26px">
+      <div><h1 style="font-size:clamp(32px,4vw,48px);letter-spacing:-.03em">${catTitle(key)}</h1><p>${list.length} ${list.length === 1 ? 'producto' : 'productos'}</p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="chip mfilter" id="toggleFilters" aria-expanded="false">Filtros</button>
+        <label for="sort" class="sr">Ordenar por</label>
+        <select id="sort" class="sel">
+          <option value="desc" ${catState.sort === 'desc' ? 'selected' : ''}>Mayor descuento</option>
+          <option value="asc" ${catState.sort === 'asc' ? 'selected' : ''}>Precio: menor a mayor</option>
+          <option value="hi" ${catState.sort === 'hi' ? 'selected' : ''}>Precio: mayor a menor</option>
+        </select>
+      </div>
+    </div>
+    <div class="layout">
+      <aside class="filters" id="filters" aria-label="Filtros">
+        <fieldset><legend>Estado del producto</legend>
+          ${Object.keys(CONDS).map(c => `<label class="check"><input type="checkbox" data-cond="${c}" ${catState.conds.has(c) ? 'checked' : ''}>${c}<em>${base.filter(p => p.cond === c).length}</em></label>`).join('')}
+        </fieldset>
+        <fieldset><legend>Precio</legend>
+          ${RANGES.map(x => `<button class="rbtn ${catState.range === x[0] ? 'on' : ''}" data-range="${x[0]}" aria-pressed="${catState.range === x[0]}">${x[1]}</button>`).join('')}
+        </fieldset>
+        <div class="help"><strong>¿Dudas con el estado?</strong>Te explicamos qué significa cada etiqueta antes de comprar.<a href="#/" data-goto-states class="link" style="font-size:14px">Ver guía de estados</a></div>
+      </aside>
+      <section class="results" aria-label="Productos">
+        ${list.length ? `<div class="grid">${list.map(card).join('')}</div>` : `<div class="empty">No hay productos con estos filtros. Prueba a quitar alguno.</div>`}
+      </section>
+    </div>
+  </div>`;
+}
+
+/* Producto */
+const prodState = { view: 0, qty: 1, tab: 'desc' };
+function pageProduct(id) {
+  const p = byId(id); if (!p) return pageNotFound();
+  const c = CATS[p.cat], cd = CONDS[p.cond];
+  const views = [['Vista frontal', c.bg], ['Perfil', '#F4F4F6'], ['Detalle', c.bg], ['Embalaje', '#F4F4F6']];
+  const rel = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).concat(PRODUCTS.filter(x => x.cat !== p.cat)).slice(0, 4);
+  const tab = prodState.tab;
+  return `<div class="wrap">
+    <nav class="crumbs" aria-label="Ruta"><a href="#/">Inicio</a><span aria-hidden="true">/</span><a href="#/c/${p.cat}">${c.name}</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">${p.name}</span></nav>
+    <div class="pgrid">
+      <div class="gal">
+        <div class="ph main" style="background:${views[prodState.view][1]}">${icon(c.icon, 220, .9)}<span class="off" style="font-size:15px">−${pct(p)} %</span><span class="view">${views[prodState.view][0]}</span></div>
+        <div class="thumbs">${views.map((v, i) => `<button data-view="${i}" class="${i === prodState.view ? 'on' : ''}" style="background:${v[1]}" aria-label="Ver ${v[0]}">${icon(c.icon, 40, 1.4)}</button>`).join('')}</div>
+      </div>
+      <div class="pinfo">
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="cond ${cd.cls}">${p.cond} · ${cd.title}</span>${p.stock <= 3 ? `<span class="cond c-liq">Solo quedan ${p.stock}</span>` : ''}</div>
+        <h1>${p.name}</h1>
+        <div class="price pprice"><b>${eur(p.price)}</b><s>${eur(p.old)}</s><span class="save" style="font-size:15px">Ahorras ${eur(p.old - p.price)}</span></div>
+        <div class="note">IVA incluido. Precio de referencia: PVP recomendado del fabricante.</div>
+        <div class="buy">
+          <div class="qty" role="group" aria-label="Cantidad">
+            <button data-q="-1" aria-label="Quitar uno">−</button><span aria-live="polite">${prodState.qty}</span><button data-q="1" aria-label="Añadir uno">+</button>
+          </div>
+          <button class="btn btn-brand" data-addp="${p.id}">Añadir al carrito</button>
+        </div>
+        <button class="btn btn-dark btn-block" data-buynow="${p.id}" style="min-height:56px">Comprar ahora</button>
+        <div class="perks">
+          <div><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span><strong>Recíbelo ${deliveryRange()}</strong> · Envío a toda España</span></div>
+          <div><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg><span><strong>14 días</strong> para devolverlo</span></div>
+          <div><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span><strong>Pago seguro</strong> con tarjeta, Apple Pay o Google Pay</span></div>
+        </div>
+        <div>
+          <div class="tabs" role="tablist">
+            ${[['desc', 'Descripción'], ['specs', 'Características'], ['ship', 'Envío y devoluciones']].map(([k, n]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${n}</button>`).join('')}
+          </div>
+          <div class="tabp" role="tabpanel">
+            ${tab === 'desc' ? `<p style="margin:0">${p.desc}</p><p style="margin:10px 0 0"><strong>Estado:</strong> ${cd.text}</p>` : ''}
+            ${tab === 'specs' ? `<dl>${Object.entries(p.specs).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>` : ''}
+            ${tab === 'ship' ? `Entrega en 1–3 días laborables en toda España. No cobramos nada por encima de lo que cuesta el transporte, y verás el precio exacto antes de pagar. Tienes 14 días desde la entrega para devolver el producto. <a href="#/info/envios" class="link" style="font-size:15px">Política de envíos</a> · <a href="#/info/devoluciones" class="link" style="font-size:15px">Devoluciones</a>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+    <section class="blk"><div class="shead"><h2 style="font-size:30px">También te puede gustar</h2></div><div class="grid">${rel.map(card).join('')}</div></section>
+  </div>`;
+}
+
+/* Carrito */
+let checkoutMsg = false, couponMsg = '';
+function pageCart() {
+  const lines = cart.map(l => ({ ...l, p: byId(l.id) })).filter(l => l.p);
+  const sub = lines.reduce((a, l) => a + l.p.price * l.qty, 0);
+  const old = lines.reduce((a, l) => a + l.p.old * l.qty, 0);
+  const units = lines.reduce((a, l) => a + l.qty, 0);
+  return `<div class="cartpage"><div class="wrap">
+    <div class="shead"><h1 style="font-size:clamp(32px,4vw,44px);letter-spacing:-.03em">Tu carrito</h1><a href="#/c/todo" class="link">Seguir comprando</a></div>
+    ${!lines.length ? `<div class="empty" style="background:#fff;border:0;display:flex;flex-direction:column;gap:16px;align-items:center"><strong style="font-size:18px;color:var(--ink)">Tu carrito está vacío</strong><a href="#/c/todo" class="btn btn-brand">Ver ofertas</a></div>` : `
+    <div class="clayout">
+      <section class="citems" aria-label="Productos del carrito">
+        ${lines.map(l => { const c = CATS[l.p.cat]; return `<article class="citem">
+          <a href="#/p/${l.p.id}" class="ph" style="background:${c.bg}">${icon(c.icon, 54, 1.3)}</a>
+          <div class="info">${condTag(l.p.cond).replace('class="cond', 'style="align-self:flex-start" class="cond')}
+            <a href="#/p/${l.p.id}" class="cname" style="font-size:17px">${l.p.name}</a>
+            <span style="font-size:14px;color:var(--muted)">${eur(l.p.price)} / ud. <s>${eur(l.p.old)}</s></span></div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="qty" role="group" aria-label="Cantidad"><button data-cq="${l.id}" data-d="-1" aria-label="Quitar uno">−</button><span>${l.qty}</span><button data-cq="${l.id}" data-d="1" aria-label="Añadir uno">+</button></div>
+            <div class="tot">${eur(l.p.price * l.qty)}</div>
+            <button class="del" data-del="${l.id}" aria-label="Eliminar ${l.p.name}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+          </div></article>`; }).join('')}
+      </section>
+      <aside class="summary" aria-label="Resumen del pedido">
+        <h2 style="font-size:24px">Resumen</h2>
+        <div class="row"><span>Productos (${units})</span><strong>${eur(sub)}</strong></div>
+        <div class="row"><span>Envío (1–3 días laborables)</span><strong>Al finalizar</strong></div>
+        <div class="row saving"><span>Te ahorras</span><span>${eur(old - sub)}</span></div>
+        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(sub)}</b></div>
+        <div class="note" style="margin-top:-8px">IVA incluido. El envío se calcula en el siguiente paso.</div>
+        <div style="display:flex;gap:8px"><label for="cupon" class="sr">Código de descuento</label><input id="cupon" class="input" style="min-height:48px;flex:1;min-width:0" placeholder="Código de descuento"><button class="btn btn-line" id="applyCoupon" style="min-height:48px;padding:0 16px;font-size:14px">Aplicar</button></div>
+        ${couponMsg ? `<div class="msg" role="status">${couponMsg}</div>` : ''}
+        <button class="btn btn-brand btn-block" id="checkout" style="min-height:58px;font-size:17px">Finalizar compra</button>
+        ${checkoutMsg ? `<div class="msg" role="status">El pago todavía no está conectado. Aquí irá la pasarela (por ejemplo Stripe o Redsys).</div>` : ''}
+        <div class="pay"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Google Pay</span></div>
+      </aside>
+    </div>`}
+  </div></div>`;
+}
+
+/* ===========================================================
+   DATOS DE LA EMPRESA (los mismos que en epicoutlet.ro)
+   =========================================================== */
+const EMPRESA = {
+  nombre: 'EpicOutlet',
+  titular: '[RAZÓN SOCIAL O NOMBRE DEL TITULAR]',
+  nif: '[NIF / CUI]',
+  direccion: 'Zăvoi, Caraș-Severin, 327435, Rumanía',
+  email: 'suportepicoutlet@gmail.com',
+  horario: 'Lunes a viernes, de 9:00 a 17:00',
+  facebook: 'https://www.facebook.com/profile.php?id=61550361555714'
+};
+const mail = `<a href="mailto:${EMPRESA.email}" class="link" style="font-size:inherit">${EMPRESA.email}</a>`;
+const contactLink = `<a href="#/info/contacto" class="link" style="font-size:inherit">formulario de contacto</a>`;
+
+/* Fecha estimada de entrega: de 1 a 3 días laborables */
+function addWorkdays(d, n) { d = new Date(d); while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n--; } return d; }
+function deliveryRange() {
+  const f = d => d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
+  const now = new Date();
+  return `entre el ${f(addWorkdays(now, 1))} y el ${f(addWorkdays(now, 3))}`;
+}
+
+const PAGES = {
+  historia: { title: 'Nuestra historia', html: `
+    <p class="lead"><strong>Todo empezó con las ganas de dos hermanos de hacer las cosas un poco diferente.</strong></p>
+    <p>Queríamos encontrar productos para <strong>todos los bolsillos</strong> y, al mismo tiempo, aprovechar cada oportunidad para darle a un producto una segunda vida.</p>
+    <p>Así nació EpicOutlet: un lugar donde descubrir productos interesantes vengan de donde vengan, de <a href="#/c/liquidaciones" class="link" style="font-size:inherit">liquidaciones de stock</a>, sobrestock, devoluciones, productos reprecintados u otras oportunidades.</p>
+    <p>Creemos que un buen producto no tiene por qué ser inalcanzable solo porque es nuevo, porque viene de un stock sobrante o porque alguien lo devolvió. Lo importante es encontrar <strong>el valor de cada producto</strong> y convertirlo en una oportunidad para alguien.</p>
+    <p>Por eso nuestra oferta cambia constantemente. A veces encontrarás lo que buscabas y otras descubrirás algo en lo que ni siquiera habías pensado.</p>
+    <p>Para nosotros nada se queda en el olvido si puede convertirse en <strong>una buena compra para alguien</strong>. EpicOutlet no va solo de comprar: va de <strong>descubrir, aprovechar oportunidades y pagar menos</strong>.</p>
+    <p class="lead"><strong>Dos hermanos. Una idea sencilla. Miles de cosas por descubrir.</strong></p>
+    <p style="font-family:var(--head);font-size:22px;font-weight:600">EpicOutlet: Descubre. Elige. Ahorra.</p>` },
+
+  contacto: { title: 'Contacto', html: `
+    <p class="lead">¿Tienes una pregunta sobre un producto, un pedido o un envío? Estamos aquí para ayudarte.</p>
+    <p>Escríbenos sobre pedidos, productos, envíos, devoluciones o cualquier otra cosa. <strong>Te respondemos lo antes posible.</strong></p>
+    <div class="infocards">
+      <div><span class="k">Correo</span>${mail}</div>
+      <div><span class="k">Horario</span>${EMPRESA.horario}</div>
+    </div>
+    <form id="contactForm" class="cform">
+      <div class="f2">
+        <label>Nombre<input class="input" name="nombre" required autocomplete="name"></label>
+        <label>Correo electrónico *<input class="input" type="email" name="email" required autocomplete="email"></label>
+      </div>
+      <div class="f2">
+        <label>Teléfono<input class="input" type="tel" name="tel" autocomplete="tel"></label>
+        <label>Asunto<select class="input" name="asunto"><option>Pregunta sobre un producto</option><option>Mi pedido</option><option>Envío</option><option>Devolución</option><option>Pago</option><option>Otro</option></select></label>
+      </div>
+      <label>Mensaje<textarea class="input" name="msg" rows="5" required></textarea></label>
+      <button class="btn btn-dark" type="submit" style="align-self:flex-start">Enviar mensaje</button>
+      <p class="small">Al enviar, se abrirá tu aplicación de correo con el mensaje preparado para ${EMPRESA.email}.</p>
+    </form>` },
+
+  faq: { title: 'Preguntas frecuentes', html: `
+    <p class="lead">Aquí tienes las respuestas a las preguntas que más nos hacéis.</p>
+    <details open><summary>¿Dónde puedo enviar una pregunta o un problema?</summary><p>Usa nuestro ${contactLink}: indica tu correo, el asunto y el mensaje, y te responderemos lo antes posible. También puedes escribirnos a ${mail}.</p></details>
+    <details><summary>¿Los productos son nuevos o reprecintados?</summary><p>En EpicOutlet encontrarás <strong>productos nuevos</strong> y <strong>reprecintados</strong>. El estado de cada producto aparece en su ficha, para que sepas lo que compras antes de hacer el pedido.</p></details>
+    <details><summary>¿Los productos de liquidación son originales?</summary><p>Sí. Todos los productos son originales y proceden de <strong>liquidaciones de stock, sobrestock, devoluciones y otros canales comerciales</strong>. En cada producto te damos toda la información disponible para que decidas con tranquilidad.</p></details>
+    <details><summary>¿Qué son los productos reprecintados?</summary><p>Son productos cuyo embalaje se ha abierto o que han sido devueltos, y que pueden volver a venderse. <strong>Su estado se indica en la ficha</strong> y cualquier particularidad aparece en la descripción.</p></details>
+    <details><summary>¿Cómo encuentro más información sobre un producto?</summary><p>En la <strong>ficha del producto</strong> tienes la descripción, las características y las imágenes. Si necesitas algo más, escríbenos desde el ${contactLink}.</p></details>
+    <details><summary>¿Cuánto tarda en llegar mi pedido?</summary><p>La entrega tarda <strong>de 1 a 3 días laborables</strong> en toda España. Más detalles en la <a href="#/info/envios" class="link" style="font-size:inherit">política de envíos</a>.</p></details>
+    <details><summary>¿Cómo puedo seguir mi pedido?</summary><p>Cuando enviemos tu pedido recibirás los datos de seguimiento del paquete, si la empresa de mensajería lo permite, para que veas en qué punto está hasta que te llegue.</p></details>
+    <details><summary>¿Puedo devolver un producto?</summary><p>Sí, tienes <strong>14 días</strong> desde que lo recibes, sin tener que dar explicaciones. Consulta la <a href="#/info/devoluciones" class="link" style="font-size:inherit">política de devoluciones</a>.</p></details>
+    <details><summary>¿Qué formas de pago aceptáis?</summary><p>Tarjeta (Visa, Mastercard, American Express, Maestro), Apple Pay y Google Pay. Más información en <a href="#/info/pagos" class="link" style="font-size:inherit">métodos de pago</a>.</p></details>` },
+
+  envios: { title: 'Política de envíos', html: `
+    <p class="lead">Queremos que tu pedido llegue lo antes posible y en perfecto estado.</p>
+    <p>Trabajamos con <strong>varias empresas de mensajería</strong> y, para cada pedido, elegimos la mejor opción según <strong>rapidez, disponibilidad y precio</strong>.</p>
+    <h2>1. ¿Dónde enviamos?</h2><p>Enviamos a <strong>toda España</strong>, también a localidades fuera de las grandes ciudades, según la cobertura de la empresa de mensajería.</p>
+    <h2>2. ¿Con qué empresas de mensajería?</h2><p>Podemos usar varias empresas de mensajería según la rapidez, el precio y la disponibilidad del servicio para cada pedido, así que la empresa puede cambiar de un pedido a otro. Según la empresa, puede haber opciones como la entrega en punto de recogida o taquilla.</p>
+    <h2>3. ¿Cuánto tarda?</h2><p>El plazo de entrega es de <strong>1 a 3 días laborables</strong> desde la confirmación del pedido. Los fines de semana y los festivos no cuentan como días laborables. En épocas de mucho volumen el plazo puede variar según la capacidad de las empresas de mensajería.</p>
+    <h2>4. ¿Cuánto cuesta el envío?</h2><p><strong>No añadimos ningún coste por encima de lo que nos cobra la empresa de mensajería.</strong> El envío puede ser gratis en algunos pedidos o promociones. Verás el coste final del envío antes de terminar la compra.</p>
+    <h2>5. ¿Hay pedido mínimo?</h2><p><strong>No hay importe mínimo.</strong> Puedes hacer un pedido de cualquier importe mientras haya stock.</p>
+    <h2>6. ¿Y si un producto se agota?</h2><p>Si un producto de tu pedido ya no está disponible por un error de stock o un imprevisto, <strong>te avisaremos</strong> para buscar juntos la mejor solución.</p>
+    <h2>7. ¿Y si el paquete llega dañado?</h2><p>Te recomendamos <strong>revisar el paquete al recibirlo</strong>. Si el embalaje o el producto tienen algún problema, escríbenos cuanto antes a ${mail} y lo solucionaremos lo más rápido posible.</p>
+    <h2>8. Seguimiento del pedido</h2><p>Cuando enviemos tu pedido, y si la empresa de mensajería lo permite, recibirás los datos para seguir el paquete hasta que te llegue.</p>
+    <h2>9. ¿Más preguntas?</h2><p>Escríbenos a ${mail} o usa el ${contactLink}.</p>` },
+
+  devoluciones: { title: 'Política de devoluciones', html: `
+    <p class="lead">Queremos que cada pedido sea fácil y transparente. Si cuando recibes el producto decides devolverlo, puedes desistir de la compra en las condiciones que marca la ley.</p>
+    <h2>1. Derecho de desistimiento</h2><p>En las compras online tienes <strong>14 días naturales</strong> desde que recibes el producto para devolverlo, sin tener que dar explicaciones. Los productos <strong>reprecintados</strong> también tienen este derecho.</p>
+    <h2>2. ¿Cómo pido una devolución?</h2><p>Rellena el ${contactLink} con tus datos e indica que quieres devolver el producto. Cuando recibamos tu solicitud, <strong>te llamaremos</strong> para explicarte los pasos. <strong>Te daremos la dirección de devolución una vez aprobada la solicitud.</strong></p>
+    <h2>3. ¿Quién paga el envío de la devolución?</h2><p>Si devuelves el producto porque has cambiado de opinión o ya no te sirve, <strong>el envío de la devolución lo pagas tú</strong>. Si el producto llega <strong>dañado, defectuoso o con un problema que no es culpa tuya</strong>, pagamos nosotros el envío y buscaremos una solución.</p>
+    <h2>4. ¿En qué estado debe estar el producto?</h2><p>Devuelve el producto en buen estado y, si corresponde, con:</p>
+    <ul><li>los accesorios originales;</li><li>la documentación;</li><li>todas las piezas incluidas;</li><li>el embalaje, cuando se pueda devolver;</li><li>cualquier otro elemento que venía con el producto.</li></ul>
+    <p>Revisaremos el producto al recibirlo. Puedes ser responsable de la pérdida de valor del producto si lo has usado más de lo necesario para comprobar su naturaleza, sus características y su funcionamiento.</p>
+    <h2>5. Productos reprecintados</h2><p>Puedes devolverlos dentro del plazo legal, igual que cualquier compra online. En un desistimiento normal, el envío de la devolución corre de tu cuenta. El estado y las particularidades de cada producto reprecintado se indican en su ficha antes de comprar.</p>
+    <h2>6. Si el producto llega dañado</h2><p>Te recomendamos <strong>revisar el paquete al recibirlo</strong>. Si ves algún daño o cualquier otro problema, avísanos cuanto antes desde el ${contactLink}. Para ser lo más transparentes posible, <strong>en algunos casos fotografiamos el producto antes de enviarlo</strong> para dejar constancia de su estado.</p>
+    <h2>7. Reembolso</h2><p>Te devolvemos el dinero <strong>por el mismo medio de pago que usaste</strong>, salvo que acordemos otro. Si hace falta una transferencia, te pediremos los datos bancarios. El reembolso se hace en un máximo de 14 días naturales desde que nos comunicas el desistimiento, aunque podemos esperar a recibir el producto o a que nos envíes el justificante de envío.</p>
+    <h2>8. ¿Cuánto tiempo tengo para enviarlo?</h2><p>Debes enviarnos el producto sin retrasos indebidos y, como máximo, <strong>14 días después de comunicarnos que desistes</strong>.</p>
+    <h2>9. ¿Necesitas ayuda?</h2><p>Usa el ${contactLink} o escríbenos a ${mail}.</p>` },
+
+  pagos: { title: 'Métodos de pago', html: `
+    <p class="lead">Te ofrecemos varias formas de pago para que cada pedido se pague de forma sencilla, rápida y segura.</p>
+    <h2>Tarjeta</h2><ul><li><strong>Visa</strong></li><li><strong>Mastercard</strong></li><li><strong>American Express</strong></li><li><strong>Maestro</strong></li></ul>
+    <h2>Pago rápido</h2><ul><li><strong>Apple Pay</strong></li><li><strong>Google Pay</strong></li></ul><p>Disponibles según tu dispositivo y tu cuenta.</p>
+    <h2>Pago seguro</h2><p>Los pagos se procesan a través de una pasarela de pago segura ([PASARELA DE PAGO]) con cifrado, detección de fraude y <strong>3D Secure</strong>, que puede pedirte una verificación extra de tu banco.</p>
+    <p><strong>EpicOutlet nunca te pedirá por correo o por teléfono los datos completos de tu tarjeta, contraseñas ni códigos de seguridad.</strong></p>
+    <h2>Confirmación del pago</h2><p>Cuando el pago se completa, registramos tu pedido y lo preparamos. Si el pago no se autoriza o hay algún problema, el pedido no se podrá completar hasta que se resuelva.</p>
+    <p>¿Dudas sobre pagos? Escríbenos a ${mail}.</p>` },
+
+  'aviso-legal': { title: 'Aviso legal', html: `
+    <p class="lead">En cumplimiento de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI-CE), te informamos de los datos del titular de este sitio web.</p>
+    <div class="infocards">
+      <div><span class="k">Titular</span>${EMPRESA.titular}</div>
+      <div><span class="k">NIF</span>${EMPRESA.nif}</div>
+      <div><span class="k">Domicilio</span>${EMPRESA.direccion}</div>
+      <div><span class="k">Correo</span>${mail}</div>
+      <div><span class="k">Sitio web</span>epicoutlet.es</div>
+    </div>
+    <h2>Objeto</h2><p>EpicOutlet es una tienda online que vende productos de distintas categorías, procedentes de liquidaciones de stock, sobrestock, devoluciones y productos reprecintados.</p>
+    <h2>Uso del sitio web</h2><p>Puedes usar este sitio para consultar productos, informarte y hacer pedidos. Eres responsable de que los datos que nos facilitas sean correctos. No está permitido usar el sitio de forma que pueda afectar a su funcionamiento o perjudicar a la tienda o a otros usuarios.</p>
+    <h2>Propiedad intelectual</h2><p>Los contenidos de este sitio (textos, imágenes, elementos gráficos, logotipo y diseño) están protegidos por la legislación de propiedad intelectual. No se permite reproducirlos, copiarlos ni usarlos sin permiso de su titular.</p>
+    <h2>Responsabilidad</h2><p>Trabajamos para que la información del sitio sea correcta y esté actualizada, pero no podemos garantizar que no haya errores puntuales. Si encuentras alguno, avísanos en ${mail}.</p>` },
+
+  terminos: { title: 'Términos y condiciones', html: `
+    <p class="lead">Al usar epicoutlet.es y hacer un pedido aceptas estos términos y condiciones. Te recomendamos leerlos antes de comprar.</p>
+    <h2>1. Sobre EpicOutlet</h2><p>EpicOutlet es una tienda online de productos de distintas categorías, procedentes de liquidaciones de stock, sobrestock, devoluciones y productos reprecintados. Los datos del titular están en el <a href="#/info/aviso-legal" class="link" style="font-size:inherit">aviso legal</a>. Contacto: ${mail}.</p>
+    <h2>2. Uso del sitio</h2><p>Puedes usar el sitio para consultar productos, informarte y hacer pedidos. Eres responsable de que los datos que facilitas sean correctos. No está permitido usar el sitio de forma que afecte a su funcionamiento o perjudique a la tienda o a otros usuarios.</p>
+    <h2>3. Productos e información</h2><p>Nos esforzamos para que las descripciones e imágenes sean lo más exactas posible. Los productos pueden proceder de <strong>liquidaciones de stock, sobrestock, devoluciones o estar reprecintados</strong>, y su estado se indica en la ficha de cada producto. La disponibilidad está limitada al stock existente.</p>
+    <h2>4. Precios</h2><p>Los precios están en <strong>euros e incluyen el IVA</strong>. Son los vigentes en el momento de hacer el pedido. Podemos cambiar precios y ofertas sin previo aviso, pero eso no afecta a los pedidos ya confirmados, salvo en los casos que prevé la ley.</p>
+    <h2>5. Pedidos y confirmación</h2><p>Al hacer un pedido nos envías una solicitud de compra de los productos elegidos. Lo procesaremos y te lo confirmaremos. Si un producto ya no está disponible o hay un error evidente en el precio o en la información, te avisaremos y el pedido podrá anularse según la ley.</p>
+    <h2>6. Pago</h2><p>Las formas de pago se muestran al finalizar la compra. Más información en <a href="#/info/pagos" class="link" style="font-size:inherit">métodos de pago</a>.</p>
+    <h2>7. Envío</h2><p>Enviamos a la dirección que indicas en el pedido, con entrega en 1 a 3 días laborables. Más información en la <a href="#/info/envios" class="link" style="font-size:inherit">política de envíos</a>.</p>
+    <h2>8. Devoluciones</h2><p>Tus derechos de desistimiento y las condiciones de devolución están en la <a href="#/info/devoluciones" class="link" style="font-size:inherit">política de devoluciones</a>.</p>
+    <h2>9. Garantía</h2><p>Los productos tienen la garantía legal que corresponda según el Real Decreto Legislativo 1/2007 (Ley General para la Defensa de los Consumidores y Usuarios) y la información de cada producto.</p>
+    <h2>10. Propiedad intelectual</h2><p>Los contenidos del sitio (textos, imágenes, gráficos, logotipo y diseño) están protegidos. No se permite reproducirlos ni usarlos sin permiso de su titular.</p>
+    <h2>11. Cambios en estos términos</h2><p>Podemos actualizar estos términos cuando sea necesario. La versión vigente siempre estará publicada en esta página.</p>
+    <h2>12. Contacto</h2><p>Para dudas, reclamaciones o más información: ${mail} o el ${contactLink}.</p>` },
+
+  privacidad: { title: 'Política de privacidad', html: `
+    <p class="lead">Respetamos tu privacidad y protegemos los datos que nos facilitas al usar nuestra tienda, de acuerdo con el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD).</p>
+    <h2>1. Responsable del tratamiento</h2><p>${EMPRESA.titular} (${EMPRESA.nombre}) · ${EMPRESA.direccion} · ${mail}</p>
+    <h2>2. Qué datos tratamos</h2><p>Según cómo uses el sitio, podemos tratar:</p>
+    <ul><li>nombre y apellidos;</li><li>dirección de entrega;</li><li>correo electrónico;</li><li>teléfono, si nos lo facilitas;</li><li>información de tus pedidos;</li><li>lo que nos envíes por el formulario de contacto;</li><li>datos técnicos necesarios para que el sitio funcione.</li></ul>
+    <p>No pedimos más datos de los necesarios para cada finalidad.</p>
+    <h2>3. Para qué los usamos</h2><ul><li>gestionar y procesar tus pedidos;</li><li>entregar los productos;</li><li>comunicarnos contigo;</li><li>responder a tus preguntas y solicitudes;</li><li>gestionar devoluciones e incidencias;</li><li>mejorar el sitio web;</li><li>cumplir nuestras obligaciones legales.</li></ul>
+    <h2>4. Formulario de contacto</h2><p>Los datos que nos envías por el ${contactLink} solo los usamos para responderte, salvo que la ley obligue o permita otra cosa.</p>
+    <h2>5. Cookies</h2><p>Consulta la <a href="#/info/cookies" class="link" style="font-size:inherit">política de cookies</a>.</p>
+    <h2>6. Seguridad</h2><p>Tomamos medidas razonables para proteger tus datos frente a accesos no autorizados, pérdida, modificación o uso indebido. Aun así, ninguna transmisión o almacenamiento electrónico es 100 % seguro.</p>
+    <h2>7. Cuánto tiempo los guardamos</h2><p>Guardamos los datos el tiempo necesario para la finalidad para la que se recogieron y durante los plazos que marca la ley.</p>
+    <h2>8. Tus derechos</h2><p>Puedes ejercer tus derechos de:</p>
+    <ul><li>acceso;</li><li>rectificación;</li><li>supresión;</li><li>limitación del tratamiento;</li><li>oposición;</li><li>portabilidad.</li></ul>
+    <p>Para ejercerlos, escríbenos a ${mail}. Si crees que no hemos tratado bien tus datos, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>
+    <h2>9. Cambios en esta política</h2><p>Podemos actualizar esta política cuando cambien la tienda, los servicios o la ley. La versión vigente estará siempre en esta página.</p>` },
+
+  cookies: { title: 'Política de cookies', html: `
+    <p class="lead">EpicOutlet usa cookies y tecnologías parecidas para que la tienda funcione bien, recordar algunas preferencias y, si corresponde, entender cómo se usa el sitio.</p>
+    <h2>1. ¿Qué son las cookies?</h2><p>Son pequeños archivos que se guardan en tu dispositivo al visitar un sitio web. Permiten que el sitio reconozca tu dispositivo y recuerde cierta información de tu visita.</p>
+    <h2>2. ¿Qué tipos podemos usar?</h2>
+    <p><strong>Necesarias:</strong> imprescindibles para que la tienda funcione, por ejemplo para guardar tu carrito, procesar pedidos y navegar por el sitio.</p>
+    <p><strong>De preferencias:</strong> recuerdan algunas de tus preferencias para facilitarte el uso de la tienda.</p>
+    <p><strong>De análisis:</strong> si las usamos, nos ayudan a entender cómo se usa el sitio para mejorarlo.</p>
+    <p><strong>De marketing:</strong> si las usamos, y solo con tu consentimiento, sirven para medir y personalizar la publicidad.</p>
+    <h2>3. Cómo gestionarlas</h2><p>Puedes aceptar, rechazar o gestionar las cookies que no son necesarias. Las estrictamente necesarias no se pueden desactivar porque sin ellas la tienda no funciona. También puedes borrarlas o bloquearlas desde la configuración de tu navegador.</p>
+    <h2>4. Cookies de terceros</h2><p>Algunos servicios integrados en el sitio, como la pasarela de pago o las herramientas de análisis o publicidad, pueden usar sus propias cookies, que se rigen por las políticas de esos proveedores.</p>
+    <h2>5. Cambios en esta política</h2><p>Podemos actualizarla si cambian las funciones de la tienda, los servicios que usamos o la ley.</p>
+    <p>Dudas sobre cookies o protección de datos: ${mail}.</p>` }
+};
+
+const INFO_NAV = [['historia', 'Nuestra historia'], ['contacto', 'Contacto'], ['faq', 'Preguntas frecuentes'], ['envios', 'Envíos'], ['devoluciones', 'Devoluciones'], ['pagos', 'Métodos de pago'], ['aviso-legal', 'Aviso legal'], ['terminos', 'Términos y condiciones'], ['privacidad', 'Privacidad'], ['cookies', 'Cookies']];
+
+function pageInfo(key) {
+  const pg = PAGES[key];
+  return `<div class="wrap">
+    <nav class="crumbs" aria-label="Ruta"><a href="#/">Inicio</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">${pg.title}</span></nav>
+    <div class="infolayout">
+      <aside class="infonav" aria-label="Información">
+        ${INFO_NAV.map(([k, n]) => `<a href="#/info/${k}" class="${k === key ? 'on' : ''}" ${k === key ? 'aria-current="page"' : ''}>${n}</a>`).join('')}
+      </aside>
+      <article class="doc"><h1>${pg.title}</h1>${pg.html}</article>
+    </div>
+  </div>`;
+}
+
+function pageAccount() {
+  return `<div class="wrap">
+    <nav class="crumbs" aria-label="Ruta"><a href="#/">Inicio</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">Mi cuenta</span></nav>
+    <div class="doc" style="max-width:720px;padding:20px 0 72px">
+      <h1>Mi cuenta</h1>
+      <p class="lead">Muy pronto podrás crear tu cuenta para ver tus pedidos y comprar más rápido.</p>
+      <p>Mientras tanto, si tienes cualquier pregunta sobre un pedido, escríbenos y te ayudamos.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+        <a href="#/info/contacto" class="btn btn-dark">Contactar</a>
+        <a href="#/carrito" class="btn btn-line">Ver mi carrito</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function pageNotFound() {
+  return `<div class="wrap" style="padding:80px 24px;text-align:center"><h1 style="font-size:40px">Página no encontrada</h1><p style="color:var(--muted)">Puede que el producto ya se haya agotado.</p><a href="#/" class="btn btn-brand">Volver al inicio</a></div>`;
+}
+
+/* ===========================================================
+   ENRUTADOR (#/, #/c/relojes, #/p/1, #/carrito)
+   =========================================================== */
+let lastRoute = '';
+function render(keepScroll) {
+  const h = location.hash.replace(/^#/, '') || '/';
+  if (h.startsWith('estados')) return;
+  const parts = h.split('/').filter(Boolean);
+  let html, active = '', nav = 'home';
+  clearInterval(cdTimer);
+  if (!parts.length) { html = pageHome(); }
+  else if (parts[0] === 'c') { active = parts[1] || 'todo'; html = pageCat(active); nav = 'cat'; }
+  else if (parts[0] === 'p') { const p = byId(+parts[1]); if (h !== lastRoute) Object.assign(prodState, { view: 0, qty: 1, tab: 'desc' }); active = p ? p.cat : ''; html = pageProduct(+parts[1]); nav = 'cat'; }
+  else if (parts[0] === 'carrito') { html = pageCart(); nav = 'cart'; }
+  else if (parts[0] === 'info' && PAGES[parts[1]]) { html = pageInfo(parts[1]); nav = 'info'; }
+  else if (parts[0] === 'cuenta') { html = pageAccount(); nav = 'acc'; }
+  else html = pageNotFound();
+  $('#app').innerHTML = html;
+  renderCatnav(active);
+  document.querySelectorAll('#bnav a').forEach(a => a.classList.toggle('on', a.dataset.r === nav));
+  updateBadges();
+  if (!parts.length) { tickCountdown(); cdTimer = setInterval(tickCountdown, 1000); }
+  if (h !== lastRoute && !keepScroll) window.scrollTo(0, 0);
+  if (h !== lastRoute) { checkoutMsg = false; couponMsg = ''; }
+  lastRoute = h;
+  const titles = { home: 'Tu outlet de confianza', cat: active ? catTitle(active) : 'Productos', cart: 'Carrito', info: PAGES[parts[1]]?.title, acc: 'Mi cuenta' };
+  document.title = `EpicOutlet.es — ${parts[0] === 'p' && byId(+parts[1]) ? byId(+parts[1]).name : titles[nav]}`;
+}
+window.addEventListener('hashchange', () => render());
+
+/* Eventos */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, a'); if (!t) return;
+  const d = t.dataset;
+  if (d.add) { addToCart(+d.add); }
+  else if (d.hf) { homeFilter = d.hf; render(true); }
+  else if (d.range) { catState.range = d.range; render(true); }
+  else if (d.view) { prodState.view = +d.view; render(true); }
+  else if (d.tab) { prodState.tab = d.tab; render(true); }
+  else if (d.q) { const p = byId(+location.hash.split('/')[2]); prodState.qty = Math.max(1, Math.min(p.stock, prodState.qty + +d.q)); render(true); }
+  else if (d.addp) { addToCart(+d.addp, prodState.qty); }
+  else if (d.buynow) { addToCart(+d.buynow, prodState.qty); location.hash = '#/carrito'; }
+  else if (d.cq) { const l = cart.find(i => i.id === +d.cq); const p = byId(l.id); l.qty = Math.max(1, Math.min(p.stock, l.qty + +d.d)); store.set(cart); render(true); }
+  else if (d.del) { cart = cart.filter(i => i.id !== +d.del); store.set(cart); render(true); }
+  else if (t.id === 'checkout') { checkoutMsg = true; render(true); }
+  else if (t.id === 'applyCoupon') { const v = $('#cupon').value.trim(); couponMsg = v ? `El código «${v.replace(/[<>&"]/g, '')}» no es válido o ha caducado.` : 'Escribe un código de descuento.'; render(true); }
+  else if (t.id === 'toggleFilters') { const f = $('#filters'); const open = f.classList.toggle('open'); t.setAttribute('aria-expanded', open); }
+  else if ('scroll' in d || 'gotoStates' in d) {
+    e.preventDefault();
+    const go = () => $('#estados')?.scrollIntoView({ behavior: 'smooth' });
+    if (location.hash && location.hash !== '#/') { location.hash = '#/'; setTimeout(go, 60); } else go();
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.cond) { t.checked ? catState.conds.add(t.dataset.cond) : catState.conds.delete(t.dataset.cond); const open = $('#filters').classList.contains('open'); render(true); if (open) $('#filters').classList.add('open'); }
+  if (t.id === 'sort') { catState.sort = t.value; render(true); }
+});
+$('#searchForm').addEventListener('submit', e => {
+  e.preventDefault(); catState.q = $('#q').value.trim();
+  location.hash = catState.q ? '#/c/buscar' : '#/c/todo'; render();
+});
+document.addEventListener('submit', e => {
+  if (e.target.id === 'contactForm') {
+    e.preventDefault(); const f = new FormData(e.target);
+    const body = `Nombre: ${f.get('nombre')}\nCorreo: ${f.get('email')}\nTeléfono: ${f.get('tel') || '-'}\n\n${f.get('msg')}`;
+    location.href = `mailto:${EMPRESA.email}?subject=${encodeURIComponent('[epicoutlet.es] ' + f.get('asunto'))}&body=${encodeURIComponent(body)}`;
+    toast('Abriendo tu correo para enviar el mensaje…');
+  }
+  if (e.target.id === 'newsForm') { e.preventDefault(); toast('¡Gracias! Te avisaremos del próximo drop.'); e.target.reset(); }
+});
+
+$('#year').textContent = new Date().getFullYear();
+render();
+</script>
+</body>
+</html>
