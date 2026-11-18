@@ -87,6 +87,7 @@ ol.steps li{margin-bottom:8px}
   <button data-v="lista">Productos</button>
   <button data-v="importar">Importar</button>
   <button data-v="atajo">Atajo iPhone</button>
+  <button data-v="ajustes">Ajustes</button>
 </nav>
 <main id="app"><div class="empty">Cargando…</div></main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -107,6 +108,48 @@ let tt;
 function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => e.classList.remove('show'), 2600); }
 
 const CFG = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : {};
+/* ---------- Margen automático ---------- */
+const AJ_DEF = { margen: 40, iva: 21, costeConIva: false, redondeo: '90', cat: {} };
+let AJ = { ...AJ_DEF };
+async function cargarAjustes() {
+  try {
+    const { data, error } = await sb.from('ajustes').select('valor').eq('clave', 'precios').maybeSingle();
+    if (error) throw error;
+    if (data) AJ = { ...AJ_DEF, ...data.valor, cat: { ...((data.valor || {}).cat || {}) }, _guardado: true };
+    AJ._db = true;
+  } catch (e) {
+    try { const l = JSON.parse(localStorage.getItem('eo_ajustes') || 'null'); if (l) AJ = { ...AJ_DEF, ...l, _guardado: true }; } catch (x) {}
+    AJ._db = false;
+  }
+}
+async function guardarAjustes() {
+  const v = { margen: AJ.margen, iva: AJ.iva, costeConIva: AJ.costeConIva, redondeo: AJ.redondeo, cat: AJ.cat };
+  try { localStorage.setItem('eo_ajustes', JSON.stringify(v)); } catch (e) {}
+  const { error } = await sb.from('ajustes').upsert({ clave: 'precios', valor: v });
+  AJ._db = !error; AJ._guardado = true;
+  return !error;
+}
+const margenDe = cat => (AJ.cat && AJ.cat[cat] != null && AJ.cat[cat] !== '') ? Number(AJ.cat[cat]) : Number(AJ.margen);
+const costeSinIva = c => AJ.costeConIva ? c / (1 + AJ.iva / 100) : c;
+function redondear(x) {
+  if (AJ.redondeo === 'no') return Math.round(x * 100) / 100;
+  const fin = AJ.redondeo === '99' ? 0.01 : 0.10;
+  let r = Math.ceil(x) - fin; if (r < x - 1e-9) r += 1;
+  return Math.round(r * 100) / 100;
+}
+/* Coste (sin IVA) + tu margen + IVA, redondeado. Nunca por debajo del margen. */
+function precioSugerido(coste, cat) {
+  const c = nOrNull(coste); if (!c || c <= 0) return null;
+  return redondear(costeSinIva(c) * (1 + margenDe(cat) / 100) * (1 + AJ.iva / 100));
+}
+function ganancia(coste, precio) {
+  const c = nOrNull(coste), p = nOrNull(precio); if (!c || !p) return '';
+  const cs = costeSinIva(c), neto = p / (1 + AJ.iva / 100) - cs;
+  return `Ganas ${eur(neto)} por unidad, sin IVA (${Math.round(neto / cs * 100)} % sobre el coste)`;
+}
+const fmtPrecio = n => n == null ? '' : n.toFixed(2).replace('.', ',');
+const ivaTxt = () => AJ.costeConIva ? 'coste con IVA' : `+ IVA ${AJ.iva} %`;
+
 let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null, filtro = 'todos', busca = '';
 
 /* Producto que llega desde el atajo del iPhone */
@@ -158,9 +201,9 @@ async function entrar() {
   const { data: ok, error } = await sb.rpc('es_admin');
   if (error || ok !== true) { await sb.auth.signOut(); return pintarLogin('Este usuario no tiene permiso de administrador. Añade su correo a la tabla «admins» en Supabase.'); }
   $('#tabs').hidden = false; $('#salir').hidden = false;
-  await cargar();
+  await Promise.all([cargar(), cargarAjustes()]);
   const pend = sessionStorage.getItem('eo_pend'); const err = sessionStorage.getItem('eo_err');
-  if (pend) { sessionStorage.removeItem('eo_pend'); abrirEditor(desdeImportado(JSON.parse(pend))); }
+  if (pend) { sessionStorage.removeItem('eo_pend'); abrirEditor(desdeImportadoConPrecio(JSON.parse(pend))); }
   else if (err) { sessionStorage.removeItem('eo_err'); vista = 'importar'; pintar(); toast(err); }
   else pintar();
 }
@@ -179,6 +222,7 @@ function pintar() {
   if (ed) return pintarEditor();
   if (vista === 'importar') return pintarImportar();
   if (vista === 'atajo') return pintarAtajo();
+  if (vista === 'ajustes') return pintarAjustes();
   pintarLista();
 }
 
@@ -192,6 +236,7 @@ function pintarLista() {
       <div><h1 style="font-size:26px">Productos</h1><div class="small">${PRODS.length} en total · ${nPub} publicados</div></div>
       <button class="btn b-brand" id="nuevo">+ Nuevo</button>
     </div>
+    ${AJ._guardado ? '' : '<div class="msg info" style="margin-bottom:14px">Pon tu margen de beneficio en <a href="#" id="irAjustes" style="font-weight:700">Ajustes</a> y los productos que importes llegarán ya con su precio de venta.</div>'}
     <div class="card" style="padding:12px 18px">
       <div class="row" style="margin-bottom:6px">
         <input class="in" id="busca" placeholder="Buscar producto…" value="${esc(busca)}" style="flex:1 1 200px">
@@ -212,6 +257,7 @@ function pintarLista() {
   $('#filtro').onchange = e => { filtro = e.target.value; pintarLista(); };
   $('#busca').oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; pintarLista(); const i = $('#busca'); i.focus(); i.setSelectionRange(pos, pos); };
   $('#nuevo').onclick = () => abrirEditor(vacio());
+  if ($('#irAjustes')) $('#irAjustes').onclick = ev => { ev.preventDefault(); vista = 'ajustes'; pintar(); };
   document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => abrirEditor(desdeFila(PRODS.find(p => p.id === b.dataset.edit))));
 }
 
@@ -239,7 +285,7 @@ function pintarImportar() {
       const r = await fetch('/api/leer?url=' + encodeURIComponent(url), { headers: { Authorization: 'Bearer ' + session.access_token } });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Error al leer el producto');
-      abrirEditor(desdeImportado(d));
+      abrirEditor(desdeImportadoConPrecio(d));
     } catch (err) {
       $('#leerMsg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`;
       b.disabled = false; b.textContent = 'Leer producto';
@@ -318,6 +364,71 @@ function pintarAtajo() {
   };
 }
 
+/* ---------- Ajustes de precio ---------- */
+function pintarAjustes() {
+  const conCoste = PRODS.filter(p => nOrNull((PRIV[p.id] || {}).coste));
+  const ej = precioSugerido(10, '__general');
+  $('#app').innerHTML = `
+    <form id="aj" class="stack">
+      <div class="card stack">
+        <h1 style="font-size:24px">Margen de beneficio</h1>
+        <p class="muted" style="margin:0">Al importar un producto, su precio de venta se calcula solo: <strong>coste + tu margen + IVA</strong>, redondeado. Siempre lo puedes cambiar a mano en cada producto.</p>
+        <div class="g2">
+          <label class="f">Margen general (% sobre el coste)<input class="in" name="margen" inputmode="decimal" value="${esc(AJ.margen)}"></label>
+          <label class="f">IVA de venta (%)<input class="in" name="iva" inputmode="decimal" value="${esc(AJ.iva)}"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="costeConIva" ${AJ.costeConIva ? 'checked' : ''}>Los precios de mis proveedores ya llevan IVA incluido</label>
+        <label class="f">Redondeo del precio<select class="in" name="redondeo">
+          <option value="90" ${AJ.redondeo === '90' ? 'selected' : ''}>Terminado en ,90 (ej. 24,90 €)</option>
+          <option value="99" ${AJ.redondeo === '99' ? 'selected' : ''}>Terminado en ,99 (ej. 24,99 €)</option>
+          <option value="no" ${AJ.redondeo === 'no' ? 'selected' : ''}>Sin redondear</option>
+        </select></label>
+        <div class="msg info" id="ejemplo">Ejemplo: un producto que te cuesta 10,00 € se venderá a <strong>${eur(ej)}</strong>.</div>
+      </div>
+      <div class="card stack">
+        <h2 style="font-size:18px">Margen por categoría <span class="small" style="font-weight:500">· opcional</span></h2>
+        <p class="small" style="margin:0">Déjalo vacío para usar el margen general.</p>
+        <div class="g2">${Object.entries(CATS).map(([k, n]) => `<label class="f">${n} (%)<input class="in" name="cat_${k}" inputmode="decimal" value="${esc(AJ.cat[k] ?? '')}" placeholder="${esc(AJ.margen)}"></label>`).join('')}</div>
+      </div>
+      <div id="ajMsg"></div>
+      <button class="btn b-brand" type="submit">Guardar ajustes</button>
+    </form>
+    <div class="card stack" style="margin-top:14px">
+      <h2 style="font-size:18px">Recalcular productos que ya tienes</h2>
+      <p class="muted" style="margin:0">Aplica el margen guardado a los <strong>${conCoste.length}</strong> productos que tienen el coste apuntado. Los que no tienen coste no se tocan.</p>
+      <button class="btn b-line" id="recalc" ${conCoste.length ? '' : 'disabled'}>Recalcular ${conCoste.length} precios</button>
+      <div id="recMsg"></div>
+    </div>`;
+  const form = $('#aj');
+  const leer = () => {
+    const f = new FormData(form);
+    AJ.margen = nOrNull(f.get('margen')) ?? 0; AJ.iva = nOrNull(f.get('iva')) ?? 21; AJ.costeConIva = !!f.get('costeConIva'); AJ.redondeo = f.get('redondeo');
+    AJ.cat = {}; Object.keys(CATS).forEach(k => { const v = nOrNull(f.get('cat_' + k)); if (v != null) AJ.cat[k] = v; });
+  };
+  form.oninput = () => { leer(); $('#ejemplo').innerHTML = `Ejemplo: un producto que te cuesta 10,00 € se venderá a <strong>${eur(precioSugerido(10, '__general'))}</strong>.`; };
+  form.onsubmit = async ev => {
+    ev.preventDefault(); leer();
+    const ok = await guardarAjustes();
+    $('#ajMsg').innerHTML = ok ? '<div class="msg ok">Ajustes guardados. Los próximos productos que importes ya llegarán con este margen.</div>'
+      : `<div class="msg err">Guardado solo en este dispositivo. Para que valga también en el móvil y el ordenador, crea la tabla de ajustes: en Supabase → SQL Editor, ejecuta el bloque «Ajustes» de <code>supabase/schema.sql</code>.</div>`;
+  };
+  $('#recalc').onclick = async () => {
+    leer();
+    const cambios = conCoste.map(p => ({ p, nuevo: precioSugerido(PRIV[p.id].coste, p.categoria) })).filter(x => x.nuevo && Number(x.p.precio) !== x.nuevo);
+    if (!cambios.length) { $('#recMsg').innerHTML = '<div class="msg ok">Todos los precios ya están con tu margen.</div>'; return; }
+    if (!confirm(`Se cambiará el precio de venta de ${cambios.length} producto${cambios.length > 1 ? 's' : ''}. ¿Continuar?`)) return;
+    const b = $('#recalc'); b.disabled = true; let n = 0, mal = 0;
+    for (const { p, nuevo } of cambios) {
+      b.textContent = `Actualizando ${n + mal + 1}/${cambios.length}…`;
+      const { error } = await sb.from('productos').update({ precio: nuevo }).eq('id', p.id);
+      error ? mal++ : n++;
+    }
+    await cargar();
+    b.disabled = false; b.textContent = 'Recalcular precios';
+    $('#recMsg').innerHTML = `<div class="msg ${mal ? 'err' : 'ok'}">${n} precio${n === 1 ? '' : 's'} actualizado${n === 1 ? '' : 's'}${mal ? `, ${mal} con error` : ''}.</div>`;
+  };
+}
+
 /* ---------- Editor ---------- */
 function vacio() {
   return { id: null, slug: '', nombre: '', categoria: 'hogar', estado: 'Nuevo', marca: '', precio: '', precio_anterior: '', stock: 1, top: false, publicado: false,
@@ -343,21 +454,25 @@ function desdeImportado(d) {
   let host = ''; try { host = new URL(d.url).hostname.replace(/^www\./, ''); } catch (e) {}
   return { ...vacio(), nombre: d.nombre || '', marca: d.marca || '', descripcion: d.descripcion || '', categoria: adivinarCategoria((d.nombre || '') + ' ' + (d.descripcion || '').slice(0, 300)),
     specs: Object.entries(d.caracteristicas || {}).map(([k, x]) => `${k}: ${x}`).join('\n') + (d.sku ? `${Object.keys(d.caracteristicas || {}).length ? '\n' : ''}Referencia: ${d.sku}` : ''),
-    imagenes: (d.imagenes || []).map(src => ({ src, remota: true })), coste: d.precio ?? '', moneda: d.moneda || '', proveedor: host, origen_url: d.url || '', importado: true };
+    imagenes: (d.imagenes || []).map(src => ({ src, remota: true })), coste: d.precio != null ? fmtPrecio(d.precio) : '', moneda: d.moneda || '', proveedor: host, origen_url: d.url || '', importado: true };
+}
+function desdeImportadoConPrecio(d) {
+  const o = desdeImportado(d);
+  if (!o.moneda || o.moneda === 'EUR') { const s = precioSugerido(o.coste, o.categoria); if (s) { o.precio = fmtPrecio(s); o.precioAuto = true; } }
+  return o;
 }
 
 function abrirEditor(x) { ed = x; window.scrollTo(0, 0); pintar(); }
 
 function pintarEditor() {
   const e = ed;
-  const coste = nOrNull(e.coste), precio = nOrNull(e.precio);
-  const margen = coste && precio ? `Ganas ${eur(precio - coste)} por unidad (${Math.round((precio - coste) / precio * 100)} % del precio)` : '';
+  const margen = ganancia(e.coste, e.precio);
   $('#app').innerHTML = `
     <div class="row" style="justify-content:space-between;margin-bottom:12px">
       <button class="btn b-ghost" id="volver" style="min-height:44px">← Volver</button>
       <span class="small">${e.id ? 'Editando producto' : e.importado ? 'Producto importado' : 'Producto nuevo'}</span>
     </div>
-    ${e.importado ? `<div class="msg info" style="margin-bottom:14px">Leído de <strong>${esc(e.proveedor)}</strong>. Revisa el nombre, pon tu precio de venta y elige el estado antes de publicar.${e.moneda && e.moneda !== 'EUR' ? ` <strong>Ojo: el precio del proveedor está en ${esc(e.moneda)}.</strong>` : ''}</div>` : ''}
+    ${e.importado ? `<div class="msg info" style="margin-bottom:14px">Leído de <strong>${esc(e.proveedor)}</strong>. ${e.precioAuto ? `Precio de venta calculado con tu margen (${margenDe(e.categoria)} % ${ivaTxt()}).` : 'Pon tu precio de venta.'} Revisa el nombre y el estado antes de publicar.${e.moneda && e.moneda !== 'EUR' ? ` <strong>Ojo: el precio del proveedor está en ${esc(e.moneda)}.</strong>` : ''}</div>` : ''}
     <form id="form" class="stack" novalidate>
       <div class="card stack">
         <h2 style="font-size:18px">Fotos</h2>
@@ -383,8 +498,13 @@ function pintarEditor() {
 
       <div class="card stack">
         <h2 style="font-size:18px">Precio y stock</h2>
-        <div class="g3 keep">
-          <label class="f">Precio venta *<input class="in" name="precio" inputmode="decimal" value="${esc(e.precio)}" placeholder="0,00"></label>
+        <div class="g2">
+          <label class="f">Coste (lo que pagas) · solo lo ves tú<input class="in" name="coste" inputmode="decimal" value="${esc(e.coste)}" placeholder="0,00"></label>
+          <label class="f">Precio venta (con IVA) *<input class="in" name="precio" inputmode="decimal" value="${esc(e.precio)}" placeholder="0,00"></label>
+        </div>
+        <div class="small" id="sug"></div>
+        <div class="margin" id="margen">${margen}</div>
+        <div class="g2">
           <label class="f">Precio tachado<input class="in" name="precio_anterior" inputmode="decimal" value="${esc(e.precio_anterior)}" placeholder="PVP"></label>
           <label class="f">Stock<input class="in" name="stock" inputmode="numeric" value="${esc(e.stock)}"></label>
         </div>
@@ -394,11 +514,7 @@ function pintarEditor() {
 
       <div class="card stack">
         <h2 style="font-size:18px">Datos internos <span class="small" style="font-weight:500">· solo los ves tú</span></h2>
-        <div class="g2">
-          <label class="f">Coste (lo que pagas)<input class="in" name="coste" inputmode="decimal" value="${esc(e.coste)}"></label>
-          <label class="f">Proveedor<input class="in" name="proveedor" value="${esc(e.proveedor)}"></label>
-        </div>
-        <div class="margin" id="margen">${margen}</div>
+        <label class="f">Proveedor<input class="in" name="proveedor" value="${esc(e.proveedor)}"></label>
         <label class="f">Enlace del proveedor<input class="in" name="origen_url" value="${esc(e.origen_url)}"></label>
         ${e.origen_url ? `<a href="${esc(e.origen_url)}" target="_blank" rel="noopener" class="small" style="font-weight:600">Abrir en el proveedor ↗</a>` : ''}
         <label class="f">Notas<textarea class="in" name="notas" rows="2" style="min-height:70px">${esc(e.notas)}</textarea></label>
@@ -416,11 +532,22 @@ function pintarEditor() {
 
   const form = $('#form');
   const leerForm = () => { const f = new FormData(form); ['nombre', 'categoria', 'estado', 'marca', 'descripcion', 'specs', 'precio', 'precio_anterior', 'stock', 'coste', 'proveedor', 'origen_url', 'notas'].forEach(k => ed[k] = f.get(k) ?? ''); ed.top = !!f.get('top'); ed.publicado = !!f.get('publicado'); };
-  form.oninput = () => {
-    leerForm();
-    const c = nOrNull(ed.coste), p = nOrNull(ed.precio);
-    $('#margen').textContent = c && p ? `Ganas ${eur(p - c)} por unidad (${Math.round((p - c) / p * 100)} % del precio)` : '';
+  const pintarSug = () => {
+    const sg = precioSugerido(ed.coste, ed.categoria), box = $('#sug');
+    if (!sg) { box.innerHTML = nOrNull(ed.coste) ? '' : 'Pon el coste y te calculo el precio con tu margen.'; }
+    else if (nOrNull(ed.precio) === sg) box.innerHTML = `Precio con tu margen (${margenDe(ed.categoria)} % ${ivaTxt()}) ✓`;
+    else box.innerHTML = `Con tu margen (${margenDe(ed.categoria)} % ${ivaTxt()}) sería <strong>${eur(sg)}</strong> · <button type="button" id="usarSug" class="btn b-ghost" style="min-height:36px;padding:0 12px;font-size:13px">Usar este precio</button>`;
+    $('#margen').textContent = ganancia(ed.coste, ed.precio);
+    if ($('#usarSug')) $('#usarSug').onclick = () => { ed.precio = fmtPrecio(sg); ed.precioAuto = true; form.precio.value = ed.precio; pintarSug(); };
   };
+  form.addEventListener('input', ev => {
+    leerForm();
+    const n = ev.target.name;
+    if (n === 'precio') ed.precioAuto = false;
+    if ((n === 'coste' || n === 'categoria') && ed.precioAuto) { const sg = precioSugerido(ed.coste, ed.categoria); if (sg) { ed.precio = fmtPrecio(sg); form.precio.value = ed.precio; } }
+    pintarSug();
+  });
+  pintarSug();
   $('#volver').onclick = () => { if (ed.importado && !ed.id && !confirm('¿Salir sin guardar este producto?')) return; ed = null; pintar(); };
   $('#files').onchange = ev => {
     leerForm();

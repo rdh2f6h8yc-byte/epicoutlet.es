@@ -89,6 +89,16 @@ drop policy if exists "admin borra fotos" on storage.objects;
 create policy "admin borra fotos" on storage.objects
   for delete to authenticated using (bucket_id = 'productos' and public.es_admin());
 
+-- Ajustes del panel (margen de beneficio, IVA, redondeo)
+create table if not exists public.ajustes (
+  clave text primary key,
+  valor jsonb not null default '{}'::jsonb
+);
+alter table public.ajustes enable row level security;
+drop policy if exists "admin gestiona ajustes" on public.ajustes;
+create policy "admin gestiona ajustes" on public.ajustes
+  for all to authenticated using (public.es_admin()) with check (public.es_admin());
+
 -- Correo de acceso al panel
 insert into public.admins (email) values ('almarainstalaciones@gmail.com')
 on conflict do nothing;
