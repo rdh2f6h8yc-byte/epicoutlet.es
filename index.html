@@ -255,6 +255,12 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
   .f2{grid-template-columns:1fr}
   .doc .lead{font-size:17px}
 }
+/* Fotos de producto */
+.ph img{width:100%;height:100%;object-fit:contain;padding:10px}
+.gal .main img{padding:24px}
+.thumbs button{overflow:hidden}
+.thumbs button img{padding:6px}
+.feat .ph img{border-radius:24px}
 /* Navegación inferior móvil */
 .bnav{display:none}
 
@@ -385,6 +391,7 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="config.js"></script>
 <script>
 /* ===========================================================
    DATOS DE LA TIENDA (de ejemplo)
@@ -409,31 +416,31 @@ const CONDS = {
   'Liquidación':  { cls: 'c-liq',   title: 'Últimas unidades', text: 'Fin de serie al mejor precio. Cuando se acaba, no se repone.' }
 };
 
-const PRODUCTS = [
-  { id: 1,  name: 'Reloj automático de acero, esfera azul, 41 mm', cat: 'relojes', cond: 'Nuevo', price: 219.90, old: 399.00, stock: 3, top: 1, isNew: 1,
+let PRODUCTS = [
+  { id: '1', name: 'Reloj automático de acero, esfera azul, 41 mm', cat: 'relojes', cond: 'Nuevo', price: 219.90, old: 399.00, stock: 3, top: 1, isNew: 1,
     desc: 'Reloj de movimiento automático con caja de acero inoxidable de 41 mm y esfera azul. Procede de sobrestock: nuevo, sin usar y con su caja original.',
     specs: { 'Movimiento': 'Automático', 'Diámetro': '41 mm', 'Material': 'Acero inoxidable', 'Resistencia al agua': '[DATO]' } },
-  { id: 2,  name: 'Reloj cronógrafo negro, 44 mm', cat: 'relojes', cond: 'Liquidación', price: 119.00, old: 225.00, stock: 1, top: 1,
+  { id: '2', name: 'Reloj cronógrafo negro, 44 mm', cat: 'relojes', cond: 'Liquidación', price: 119.00, old: 225.00, stock: 1, top: 1,
     desc: 'Cronógrafo de cuarzo con acabado negro mate y correa de silicona. Fin de serie.', specs: { 'Movimiento': 'Cuarzo', 'Diámetro': '44 mm', 'Correa': 'Silicona' } },
-  { id: 3,  name: 'Reloj de cuarzo plateado y negro, correa de acero', cat: 'relojes', cond: 'Caja abierta', price: 89.00, old: 149.00, stock: 6,
+  { id: '3', name: 'Reloj de cuarzo plateado y negro, correa de acero', cat: 'relojes', cond: 'Caja abierta', price: 89.00, old: 149.00, stock: 6,
     desc: 'Reloj elegante de cuarzo con brazalete de acero. Devolución sin uso, completo.', specs: { 'Movimiento': 'Cuarzo', 'Diámetro': '40 mm', 'Correa': 'Acero' } },
-  { id: 4,  name: 'Reloj de buceo 200 m, bisel giratorio', cat: 'relojes', cond: 'Nuevo', price: 169.00, old: 289.00, stock: 7, isNew: 1,
+  { id: '4', name: 'Reloj de buceo 200 m, bisel giratorio', cat: 'relojes', cond: 'Nuevo', price: 169.00, old: 289.00, stock: 7, isNew: 1,
     desc: 'Reloj de buceo con bisel giratorio unidireccional y agujas luminiscentes.', specs: { 'Movimiento': 'Cuarzo', 'Diámetro': '42 mm', 'Resistencia al agua': '200 m' } },
-  { id: 5,  name: 'Osito decorativo de rosas artificiales, 25 cm', cat: 'hogar', cond: 'Nuevo', price: 29.90, old: 57.90, stock: 12, top: 1,
+  { id: '5', name: 'Osito decorativo de rosas artificiales, 25 cm', cat: 'hogar', cond: 'Nuevo', price: 29.90, old: 57.90, stock: 12, top: 1,
     desc: 'Osito hecho con rosas artificiales, ideal para regalar. Presentado en caja.', specs: { 'Altura': '25 cm', 'Material': 'Espuma' } },
-  { id: 6,  name: 'Manta-capa calefactable con capucha, USB, 3 niveles', cat: 'hogar', cond: 'Reprecintado', price: 34.90, old: 59.90, stock: 2, top: 1, isNew: 1,
+  { id: '6', name: 'Manta-capa calefactable con capucha, USB, 3 niveles', cat: 'hogar', cond: 'Reprecintado', price: 34.90, old: 59.90, stock: 2, top: 1, isNew: 1,
     desc: 'Manta-capa con capucha y calefacción por USB con 3 niveles de temperatura.', specs: { 'Alimentación': 'USB', 'Niveles': '3 (45–65 °C)' } },
-  { id: 7,  name: 'Mordedor de silicona para bebé, forma de mando', cat: 'bebe', cond: 'Nuevo', price: 12.90, old: 19.90, stock: 20, top: 1,
+  { id: '7', name: 'Mordedor de silicona para bebé, forma de mando', cat: 'bebe', cond: 'Nuevo', price: 12.90, old: 19.90, stock: 20, top: 1,
     desc: 'Mordedor de silicona alimentaria en forma de mando a distancia.', specs: { 'Material': 'Silicona alimentaria', 'Edad': '[DATO]' } },
-  { id: 8,  name: 'Set de 2 pelotas interactivas para perro, con sonido', cat: 'mascotas', cond: 'Caja abierta', price: 13.90, old: 24.90, stock: 9, top: 1,
+  { id: '8', name: 'Set de 2 pelotas interactivas para perro, con sonido', cat: 'mascotas', cond: 'Caja abierta', price: 13.90, old: 24.90, stock: 9, top: 1,
     desc: 'Dos pelotas que rebotan y emiten sonido para mantener activo a tu perro.', specs: { 'Unidades': '2', 'Sonido': 'Sí' } },
-  { id: 9,  name: 'Máscara térmica para snowboard y ciclismo', cat: 'deporte', cond: 'Nuevo', price: 18.90, old: 34.90, stock: 15, top: 1, isNew: 1,
+  { id: '9', name: 'Máscara térmica para snowboard y ciclismo', cat: 'deporte', cond: 'Nuevo', price: 18.90, old: 34.90, stock: 15, top: 1, isNew: 1,
     desc: 'Máscara facial térmica y transpirable para deportes de invierno y bici.', specs: { 'Talla': 'Única', 'Uso': 'Snowboard, ciclismo' } },
-  { id: 10, name: 'Memoria RAM DDR5 64 GB (2×32 GB) 6400 MHz', cat: 'tecnologia', cond: 'Caja abierta', price: 189.00, old: 249.00, stock: 2,
+  { id: '10', name: 'Memoria RAM DDR5 64 GB (2×32 GB) 6400 MHz', cat: 'tecnologia', cond: 'Caja abierta', price: 189.00, old: 249.00, stock: 2,
     desc: 'Kit de memoria DDR5 de alto rendimiento. Embalaje abierto, sin uso.', specs: { 'Capacidad': '64 GB (2×32)', 'Velocidad': '6400 MHz' } },
-  { id: 11, name: 'Bebida isotónica, pack 12 × 500 ml', cat: 'deporte', cond: 'Liquidación', price: 17.90, old: 32.90, stock: 4, isNew: 1,
+  { id: '11', name: 'Bebida isotónica, pack 12 × 500 ml', cat: 'deporte', cond: 'Liquidación', price: 17.90, old: 32.90, stock: 4, isNew: 1,
     desc: 'Pack de 12 botellas de bebida isotónica. Liquidación de stock.', specs: { 'Contenido': '12 × 500 ml', 'Consumo preferente': '[FECHA]' } },
-  { id: 12, name: 'Desodorante en barra para hombre, 50 ml', cat: 'belleza', cond: 'Liquidación', price: 1.90, old: 4.50, stock: 30,
+  { id: '12', name: 'Desodorante en barra para hombre, 50 ml', cat: 'belleza', cond: 'Liquidación', price: 1.90, old: 4.50, stock: 30,
     desc: 'Desodorante en barra de larga duración. Últimas unidades.', specs: { 'Contenido': '50 ml' } }
 ];
 
@@ -441,10 +448,16 @@ const PRODUCTS = [
    UTILIDADES
    =========================================================== */
 const $ = (s, el = document) => el.querySelector(s);
-const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-const pct = p => Math.round((1 - p.price / p.old) * 100);
+const eur = n => Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const pct = p => p.old && p.old > p.price ? Math.round((1 - p.price / p.old) * 100) : 0;
+const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const offTag = (p, st = '') => pct(p) > 0 ? `<span class="off" ${st}>−${pct(p)} %</span>` : '';
+const oldTag = p => pct(p) > 0 ? `<s>${eur(p.old)}</s>` : '';
+/* Foto del producto, o dibujo de la categoría si aún no tiene */
+const media = (p, size, sw, i = 0) => p.images && p.images[i] ? `<img src="${p.images[i]}" alt="${p.name}" loading="lazy" decoding="async">` : icon(CATS[p.cat].icon, size, sw);
+const phBg = p => p.images && p.images.length ? '#fff' : CATS[p.cat].bg;
 const icon = (d, size = 24, sw = 1.3) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
-const byId = id => PRODUCTS.find(p => p.id === id);
+const byId = id => PRODUCTS.find(p => String(p.id) === String(id));
 const condTag = c => `<span class="cond ${CONDS[c].cls}">${c}</span>`;
 
 /* Carrito guardado en el navegador */
@@ -456,7 +469,7 @@ let cart = store.get();
 function cartCount() { return cart.reduce((a, i) => a + i.qty, 0); }
 function updateBadges() { document.querySelectorAll('[data-count]').forEach(b => b.textContent = cartCount()); }
 function addToCart(id, qty = 1) {
-  const p = byId(id); const line = cart.find(i => i.id === id);
+  const p = byId(id); if (!p) return; const line = cart.find(i => String(i.id) === String(id));
   if (line) line.qty = Math.min(p.stock, line.qty + qty); else cart.push({ id, qty: Math.min(p.stock, qty) });
   store.set(cart); updateBadges();
   toast(`Añadido: ${p.name}`);
@@ -472,12 +485,12 @@ function toast(msg) {
 function card(p) {
   const c = CATS[p.cat];
   return `<article class="card">
-    <a href="#/p/${p.id}" class="ph" style="background:${c.bg}">${icon(c.icon, 84, 1.2)}
-      <span class="off">−${pct(p)} %</span>${condTag(p.cond)}</a>
+    <a href="#/p/${p.id}" class="ph" style="background:${phBg(p)}">${media(p, 84, 1.2)}
+      ${offTag(p)}${condTag(p.cond)}</a>
     <div class="cbody">
       <a href="#/p/${p.id}" class="cname">${p.name}</a>
-      <div class="price"><b>${eur(p.price)}</b><s>${eur(p.old)}</s></div>
-      ${p.stock <= 3 ? `<div class="low">Solo quedan ${p.stock}</div>` : `<div class="save">Ahorras ${eur(p.old - p.price)}</div>`}
+      <div class="price"><b>${eur(p.price)}</b>${oldTag(p)}</div>
+      ${p.stock <= 3 ? `<div class="low">Solo quedan ${p.stock}</div>` : pct(p) > 0 ? `<div class="save">Ahorras ${eur(p.old - p.price)}</div>` : ''}
       <button class="btn btn-dark" data-add="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir</button>
     </div></article>`;
 }
@@ -497,9 +510,10 @@ let cdTimer;
 const dropTarget = Date.now() + ((1 * 24 + 20) * 60 + 12) * 60000; // [FECHA DEL PRÓXIMO DROP]
 
 function pageHome() {
-  const f = PRODUCTS[0], fc = CATS[f.cat];
+  const f = PRODUCTS.find(p => p.top && pct(p) > 0) || PRODUCTS[0];
   const filters = [['todo', 'Todo'], ['relojes', 'Relojes'], ['hogar', 'Hogar'], ['bebe', 'Bebé'], ['mascotas', 'Mascotas'], ['deporte', 'Deporte']];
-  const tops = PRODUCTS.filter(p => p.top && (homeFilter === 'todo' || p.cat === homeFilter));
+  const base = PRODUCTS.some(p => p.top) ? PRODUCTS.filter(p => p.top) : PRODUCTS.slice(0, 12);
+  const tops = base.filter(p => homeFilter === 'todo' || p.cat === homeFilter);
   return `
   <div class="wrap">
     <section class="hero">
@@ -517,15 +531,15 @@ function pageHome() {
           <div><div class="k">Próximo drop de novedades</div><div class="s">Nuevos lotes en cuanto llegan. Unidades limitadas.</div></div>
           <div class="cd" id="cd"></div>
         </div>
-        <a href="#/p/${f.id}" class="feat">
-          <div class="ph" style="background:#fff">${icon(fc.icon, 90, 1.1)}</div>
+        ${f ? `<a href="#/p/${f.id}" class="feat">
+          <div class="ph" style="background:#fff">${media(f, 90, 1.1)}</div>
           <div style="display:flex;flex-direction:column;gap:10px">
-            <span class="off" style="position:static;align-self:flex-start">−${pct(f)} %</span>
+            ${offTag(f, 'style="position:static;align-self:flex-start"')}
             <div style="font-size:13px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em">Oferta destacada</div>
             <h3>${f.name}</h3>
-            <div class="price"><b style="font-size:26px">${eur(f.price)}</b><s>${eur(f.old)}</s></div>
+            <div class="price"><b style="font-size:26px">${eur(f.price)}</b>${oldTag(f)}</div>
           </div>
-        </a>
+        </a>` : ''}
       </div>
     </section>
 
@@ -648,21 +662,24 @@ const prodState = { view: 0, qty: 1, tab: 'desc' };
 function pageProduct(id) {
   const p = byId(id); if (!p) return pageNotFound();
   const c = CATS[p.cat], cd = CONDS[p.cond];
-  const views = [['Vista frontal', c.bg], ['Perfil', '#F4F4F6'], ['Detalle', c.bg], ['Embalaje', '#F4F4F6']];
+  const hasImg = p.images && p.images.length;
+  const views = hasImg ? p.images.map((src, i) => [`Foto ${i + 1}`, '#fff']) : [['Vista frontal', c.bg], ['Perfil', '#F4F4F6'], ['Detalle', c.bg], ['Embalaje', '#F4F4F6']];
+  if (prodState.view >= views.length) prodState.view = 0;
   const rel = PRODUCTS.filter(x => x.cat === p.cat && x.id !== p.id).concat(PRODUCTS.filter(x => x.cat !== p.cat)).slice(0, 4);
   const tab = prodState.tab;
   return `<div class="wrap">
     <nav class="crumbs" aria-label="Ruta"><a href="#/">Inicio</a><span aria-hidden="true">/</span><a href="#/c/${p.cat}">${c.name}</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">${p.name}</span></nav>
     <div class="pgrid">
       <div class="gal">
-        <div class="ph main" style="background:${views[prodState.view][1]}">${icon(c.icon, 220, .9)}<span class="off" style="font-size:15px">−${pct(p)} %</span><span class="view">${views[prodState.view][0]}</span></div>
-        <div class="thumbs">${views.map((v, i) => `<button data-view="${i}" class="${i === prodState.view ? 'on' : ''}" style="background:${v[1]}" aria-label="Ver ${v[0]}">${icon(c.icon, 40, 1.4)}</button>`).join('')}</div>
+        <div class="ph main" style="background:${views[prodState.view][1]}">${media(p, 220, .9, prodState.view)}${offTag(p, 'style="font-size:15px"')}${hasImg ? '' : `<span class="view">${views[prodState.view][0]}</span>`}</div>
+        <div class="thumbs">${views.map((v, i) => `<button data-view="${i}" class="${i === prodState.view ? 'on' : ''}" style="background:${v[1]}" aria-label="Ver ${v[0]}">${media(p, 40, 1.4, i)}</button>`).join('')}</div>
       </div>
       <div class="pinfo">
         <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="cond ${cd.cls}">${p.cond} · ${cd.title}</span>${p.stock <= 3 ? `<span class="cond c-liq">Solo quedan ${p.stock}</span>` : ''}</div>
         <h1>${p.name}</h1>
-        <div class="price pprice"><b>${eur(p.price)}</b><s>${eur(p.old)}</s><span class="save" style="font-size:15px">Ahorras ${eur(p.old - p.price)}</span></div>
-        <div class="note">IVA incluido. Precio de referencia: PVP recomendado del fabricante.</div>
+        <div class="price pprice"><b>${eur(p.price)}</b>${oldTag(p)}${pct(p) > 0 ? `<span class="save" style="font-size:15px">Ahorras ${eur(p.old - p.price)}</span>` : ''}</div>
+        <div class="note">IVA incluido.${pct(p) > 0 ? ' Precio de referencia: PVP recomendado del fabricante.' : ''}</div>
+        ${p.brand ? `<div class="note" style="margin-top:-14px">Marca: <strong style="color:var(--ink)">${p.brand}</strong></div>` : ''}
         <div class="buy">
           <div class="qty" role="group" aria-label="Cantidad">
             <button data-q="-1" aria-label="Quitar uno">−</button><span aria-live="polite">${prodState.qty}</span><button data-q="1" aria-label="Añadir uno">+</button>
@@ -681,7 +698,7 @@ function pageProduct(id) {
           </div>
           <div class="tabp" role="tabpanel">
             ${tab === 'desc' ? `<p style="margin:0">${p.desc}</p><p style="margin:10px 0 0"><strong>Estado:</strong> ${cd.text}</p>` : ''}
-            ${tab === 'specs' ? `<dl>${Object.entries(p.specs).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>` : ''}
+            ${tab === 'specs' ? (Object.keys(p.specs || {}).length ? `<dl>${Object.entries(p.specs).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>` : 'Sin características adicionales.') : ''}
             ${tab === 'ship' ? `Entrega en 1–3 días laborables en toda España. No cobramos nada por encima de lo que cuesta el transporte, y verás el precio exacto antes de pagar. Tienes 14 días desde la entrega para devolver el producto. <a href="#/info/envios" class="link" style="font-size:15px">Política de envíos</a> · <a href="#/info/devoluciones" class="link" style="font-size:15px">Devoluciones</a>` : ''}
           </div>
         </div>
@@ -696,7 +713,7 @@ let checkoutMsg = false, couponMsg = '';
 function pageCart() {
   const lines = cart.map(l => ({ ...l, p: byId(l.id) })).filter(l => l.p);
   const sub = lines.reduce((a, l) => a + l.p.price * l.qty, 0);
-  const old = lines.reduce((a, l) => a + l.p.old * l.qty, 0);
+  const old = lines.reduce((a, l) => a + (pct(l.p) > 0 ? l.p.old : l.p.price) * l.qty, 0);
   const units = lines.reduce((a, l) => a + l.qty, 0);
   return `<div class="cartpage"><div class="wrap">
     <div class="shead"><h1 style="font-size:clamp(32px,4vw,44px);letter-spacing:-.03em">Tu carrito</h1><a href="#/c/todo" class="link">Seguir comprando</a></div>
@@ -704,10 +721,10 @@ function pageCart() {
     <div class="clayout">
       <section class="citems" aria-label="Productos del carrito">
         ${lines.map(l => { const c = CATS[l.p.cat]; return `<article class="citem">
-          <a href="#/p/${l.p.id}" class="ph" style="background:${c.bg}">${icon(c.icon, 54, 1.3)}</a>
+          <a href="#/p/${l.p.id}" class="ph" style="background:${phBg(l.p)}">${media(l.p, 54, 1.3)}</a>
           <div class="info">${condTag(l.p.cond).replace('class="cond', 'style="align-self:flex-start" class="cond')}
             <a href="#/p/${l.p.id}" class="cname" style="font-size:17px">${l.p.name}</a>
-            <span style="font-size:14px;color:var(--muted)">${eur(l.p.price)} / ud. <s>${eur(l.p.old)}</s></span></div>
+            <span style="font-size:14px;color:var(--muted)">${eur(l.p.price)} / ud. ${oldTag(l.p)}</span></div>
           <div style="display:flex;align-items:center;gap:14px">
             <div class="qty" role="group" aria-label="Cantidad"><button data-cq="${l.id}" data-d="-1" aria-label="Quitar uno">−</button><span>${l.qty}</span><button data-cq="${l.id}" data-d="1" aria-label="Añadir uno">+</button></div>
             <div class="tot">${eur(l.p.price * l.qty)}</div>
@@ -939,7 +956,7 @@ function render(keepScroll) {
   clearInterval(cdTimer);
   if (!parts.length) { html = pageHome(); }
   else if (parts[0] === 'c') { active = parts[1] || 'todo'; html = pageCat(active); nav = 'cat'; }
-  else if (parts[0] === 'p') { const p = byId(+parts[1]); if (h !== lastRoute) Object.assign(prodState, { view: 0, qty: 1, tab: 'desc' }); active = p ? p.cat : ''; html = pageProduct(+parts[1]); nav = 'cat'; }
+  else if (parts[0] === 'p') { const p = byId(decodeURIComponent(parts[1])); if (h !== lastRoute) Object.assign(prodState, { view: 0, qty: 1, tab: 'desc' }); active = p ? p.cat : ''; html = pageProduct(decodeURIComponent(parts[1])); nav = 'cat'; }
   else if (parts[0] === 'carrito') { html = pageCart(); nav = 'cart'; }
   else if (parts[0] === 'info' && PAGES[parts[1]]) { html = pageInfo(parts[1]); nav = 'info'; }
   else if (parts[0] === 'cuenta') { html = pageAccount(); nav = 'acc'; }
@@ -953,7 +970,7 @@ function render(keepScroll) {
   if (h !== lastRoute) { checkoutMsg = false; couponMsg = ''; }
   lastRoute = h;
   const titles = { home: 'Tu outlet de confianza', cat: active ? catTitle(active) : 'Productos', cart: 'Carrito', info: PAGES[parts[1]]?.title, acc: 'Mi cuenta' };
-  document.title = `EpicOutlet.es — ${parts[0] === 'p' && byId(+parts[1]) ? byId(+parts[1]).name : titles[nav]}`;
+  document.title = `EpicOutlet.es — ${parts[0] === 'p' && byId(decodeURIComponent(parts[1])) ? byId(decodeURIComponent(parts[1])).rawName || byId(decodeURIComponent(parts[1])).name : titles[nav]}`;
 }
 window.addEventListener('hashchange', () => render());
 
@@ -961,16 +978,16 @@ window.addEventListener('hashchange', () => render());
 document.addEventListener('click', e => {
   const t = e.target.closest('button, a'); if (!t) return;
   const d = t.dataset;
-  if (d.add) { addToCart(+d.add); }
+  if (d.add) { addToCart(d.add); }
   else if (d.hf) { homeFilter = d.hf; render(true); }
   else if (d.range) { catState.range = d.range; render(true); }
   else if (d.view) { prodState.view = +d.view; render(true); }
   else if (d.tab) { prodState.tab = d.tab; render(true); }
-  else if (d.q) { const p = byId(+location.hash.split('/')[2]); prodState.qty = Math.max(1, Math.min(p.stock, prodState.qty + +d.q)); render(true); }
-  else if (d.addp) { addToCart(+d.addp, prodState.qty); }
-  else if (d.buynow) { addToCart(+d.buynow, prodState.qty); location.hash = '#/carrito'; }
-  else if (d.cq) { const l = cart.find(i => i.id === +d.cq); const p = byId(l.id); l.qty = Math.max(1, Math.min(p.stock, l.qty + +d.d)); store.set(cart); render(true); }
-  else if (d.del) { cart = cart.filter(i => i.id !== +d.del); store.set(cart); render(true); }
+  else if (d.q) { const p = byId(decodeURIComponent(location.hash.split('/')[2])); prodState.qty = Math.max(1, Math.min(p.stock, prodState.qty + +d.q)); render(true); }
+  else if (d.addp) { addToCart(d.addp, prodState.qty); }
+  else if (d.buynow) { addToCart(d.buynow, prodState.qty); location.hash = '#/carrito'; }
+  else if (d.cq) { const l = cart.find(i => String(i.id) === d.cq); const p = byId(l.id); l.qty = Math.max(1, Math.min(p.stock, l.qty + +d.d)); store.set(cart); render(true); }
+  else if (d.del) { cart = cart.filter(i => String(i.id) !== d.del); store.set(cart); render(true); }
   else if (t.id === 'checkout') { checkoutMsg = true; render(true); }
   else if (t.id === 'applyCoupon') { const v = $('#cupon').value.trim(); couponMsg = v ? `El código «${v.replace(/[<>&"]/g, '')}» no es válido o ha caducado.` : 'Escribe un código de descuento.'; render(true); }
   else if (t.id === 'toggleFilters') { const f = $('#filters'); const open = f.classList.toggle('open'); t.setAttribute('aria-expanded', open); }
@@ -999,8 +1016,44 @@ document.addEventListener('submit', e => {
   if (e.target.id === 'newsForm') { e.preventDefault(); toast('¡Gracias! Te avisaremos del próximo drop.'); e.target.reset(); }
 });
 
+/* ===========================================================
+   PRODUCTOS DESDE SUPABASE
+   Si config.js está vacío, la tienda enseña los productos de ejemplo.
+   =========================================================== */
+async function cargarProductos() {
+  const C = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : null;
+  if (!C || !C.supabaseUrl || !C.supabaseKey) return;
+  try {
+    const campos = 'id,slug,nombre,categoria,estado,marca,precio,precio_anterior,stock,descripcion,caracteristicas,imagenes,top,creado';
+    const r = await fetch(`${C.supabaseUrl}/rest/v1/productos?publicado=eq.true&select=${campos}&order=creado.desc`, { headers: { apikey: C.supabaseKey } });
+    if (!r.ok) throw new Error(r.status);
+    const rows = await r.json();
+    const mes = 30 * 864e5;
+    PRODUCTS = rows.map(x => ({
+      id: x.slug,
+      rawName: x.nombre,
+      name: esc(x.nombre),
+      cat: CATS[x.categoria] ? x.categoria : 'hogar',
+      cond: CONDS[x.estado] ? x.estado : 'Nuevo',
+      brand: x.marca ? esc(x.marca) : '',
+      price: Number(x.precio),
+      old: x.precio_anterior != null ? Number(x.precio_anterior) : null,
+      stock: x.stock,
+      top: x.top,
+      isNew: Date.now() - new Date(x.creado).getTime() < mes,
+      desc: esc(x.descripcion || '').replace(/\n/g, '<br>') || 'Sin descripción.',
+      specs: Object.fromEntries(Object.entries(x.caracteristicas || {}).map(([k, v]) => [esc(k), esc(v)])),
+      images: (x.imagenes || []).filter(u => /^https:\/\//.test(u)).map(esc)
+    }));
+  } catch (e) {
+    PRODUCTS = [];
+    console.error('No se han podido cargar los productos', e);
+  }
+}
+
 $('#year').textContent = new Date().getFullYear();
-render();
+$('#app').innerHTML = '<div class="wrap" style="padding:80px 24px;text-align:center;color:var(--muted)">Cargando productos…</div>';
+cargarProductos().then(() => render());
 </script>
 </body>
 </html>

@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel · EpicOutlet.es</title>
+<meta name="theme-color" content="#16161A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16161A;--ink2:#3D3D45;--muted:#5C5C64;--line:#E4E4E8;--soft:#F4F4F6;--bg:#F6F6F8;--brand:#FF6A00;--brand-soft:#FFF1E7;--brand-dark:#B43C00;--ok:#1D6B3A;--ok-soft:#E3F2E8;--err:#B42318;--err-soft:#FDECEA;--head:'Space Grotesk',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom)}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{font-family:var(--head);letter-spacing:-.02em;margin:0}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.top{position:sticky;top:0;z-index:10;background:var(--ink);color:#fff;padding:12px 16px calc(12px);display:flex;align-items:center;gap:12px}
+.logo{font-family:var(--head);font-weight:700;font-size:20px;flex:1}.logo b{color:var(--brand)}.logo small{font-size:13px;color:#A9A9B1;font-weight:500;margin-left:6px}
+.top a,.top button{color:#fff;background:#2B2B31;border:0;border-radius:10px;padding:8px 12px;font-size:14px;text-decoration:none;min-height:40px;display:inline-flex;align-items:center}
+.tabs{display:flex;gap:6px;padding:12px 16px 0;max-width:980px;margin:0 auto;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--muted);white-space:nowrap;min-height:44px}
+.tabs button.on{background:var(--ink);color:#fff}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;border:0;font-weight:600;font-size:15px;text-decoration:none}
+.btn:disabled{opacity:.55;cursor:default}
+.b-brand{background:var(--brand);color:var(--ink);font-weight:700}
+.b-dark{background:var(--ink);color:#fff}
+.b-line{background:#fff;box-shadow:inset 0 0 0 1px var(--ink)}
+.b-ghost{background:var(--soft)}
+.b-danger{background:#fff;color:var(--err);box-shadow:inset 0 0 0 1px #F2B8B5}
+.full{width:100%}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--ink2)}
+.in{width:100%;min-height:48px;border-radius:12px;border:1px solid #C9C9CF;padding:0 14px;font-size:16px;background:#fff;font-weight:400;color:var(--ink)}
+textarea.in{padding:12px 14px;min-height:120px;resize:vertical;line-height:1.5}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--muted);font-size:14px}
+.small{font-size:13px;color:var(--muted)}
+.msg{border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
+.msg.ok{background:var(--ok-soft);color:var(--ok)}
+.msg.err{background:var(--err-soft);color:var(--err)}
+.msg.info{background:var(--brand-soft);color:var(--ink2)}
+.check{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:500;min-height:44px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--ink)}
+.prow{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.prow:last-child{border:0}
+.thumb{width:64px;height:64px;border-radius:12px;background:var(--soft);flex:0 0 64px;object-fit:contain;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);overflow:hidden}
+.pinfo{flex:1;min-width:0}
+.pname{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 8px;border-radius:7px}
+.t-pub{background:var(--ok-soft);color:var(--ok)}.t-bor{background:var(--soft);color:var(--muted)}
+.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.im{position:relative;border-radius:14px;overflow:hidden;background:var(--soft);aspect-ratio:1/1;border:2px solid transparent}
+.im.main{border-color:var(--brand)}
+.im img{width:100%;height:100%;object-fit:contain;background:#fff}
+.im .ctr{position:absolute;inset:auto 6px 6px 6px;display:flex;gap:6px;justify-content:space-between}
+.im .ctr button{width:36px;height:36px;border-radius:10px;border:0;background:rgba(22,22,26,.85);color:#fff;font-size:16px}
+.im .lbl{position:absolute;top:6px;left:6px;background:var(--brand);color:var(--ink);font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+.addimg{border:2px dashed #C9C9CF;border-radius:14px;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;padding:8px}
+.margin{font-size:13px;font-weight:600}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{background:var(--ink);color:#E9E9EE;border-radius:14px;padding:14px;font-size:11.5px;line-height:1.45;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:0}
+ol.steps{margin:0;padding-left:22px;line-height:1.6}
+ol.steps li{margin-bottom:8px}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,140px);background:var(--ink);color:#fff;padding:13px 20px;border-radius:14px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .3s;z-index:50;max-width:calc(100% - 32px)}
+.toast.show{transform:translate(-50%,0)}
+.sticky-save{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:18px 0 8px;display:flex;gap:10px}
+.sticky-save .btn{flex:1}
+@media (max-width:640px){.g2,.g3{grid-template-columns:1fr}.g3.keep{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">Epic<b>Outlet</b><small>Panel</small></div>
+  <a href="/" target="_blank" rel="noopener">Ver tienda</a>
+  <button id="salir" hidden>Salir</button>
+</div>
+<nav class="tabs" id="tabs" hidden>
+  <button data-v="lista">Productos</button>
+  <button data-v="importar">Importar</button>
+  <button data-v="atajo">Atajo iPhone</button>
+</nav>
+<main id="app"><div class="empty">Cargando…</div></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/config.js"></script>
+<script>
+/* ===========================================================
+   Panel de EpicOutlet.es
+   =========================================================== */
+const CATS = { relojes: 'Relojes', hogar: 'Hogar', bebe: 'Bebé y juguetes', mascotas: 'Mascotas', deporte: 'Deporte', tecnologia: 'Tecnología', belleza: 'Belleza' };
+const ESTADOS = ['Nuevo', 'Caja abierta', 'Reprecintado', 'Liquidación'];
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const eur = n => (n == null || n === '' || isNaN(n)) ? '—' : Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const nOrNull = v => { if (v === '' || v == null) return null; const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; };
+let tt;
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => e.classList.remove('show'), 2600); }
+
+const CFG = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : {};
+let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null, filtro = 'todos', busca = '';
+
+/* Producto que llega desde el atajo del iPhone */
+(function leerHash() {
+  const h = location.hash;
+  if (h.startsWith('#importar=')) {
+    try { const d = JSON.parse(decodeURIComponent(h.slice(10))); sessionStorage.setItem('eo_pend', JSON.stringify(d)); } catch (e) { sessionStorage.setItem('eo_err', 'No se ha podido leer el producto que ha enviado el atajo.'); }
+    history.replaceState(null, '', location.pathname);
+  } else if (h.startsWith('#error=')) {
+    sessionStorage.setItem('eo_err', 'El atajo no ha podido leer la página: ' + decodeURIComponent(h.slice(7)));
+    history.replaceState(null, '', location.pathname);
+  }
+})();
+
+/* ---------- Arranque ---------- */
+async function iniciar() {
+  if (!CFG.supabaseUrl || !CFG.supabaseKey || !window.supabase) {
+    $('#app').innerHTML = `<div class="card stack"><h2>Falta conectar Supabase</h2><p class="muted">Rellena <code>config.js</code> con la dirección y la clave pública de tu proyecto de Supabase y vuelve a subirlo a GitHub.</p></div>`;
+    return;
+  }
+  sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  sb.auth.onAuthStateChange((_e, s) => { session = s; });
+  if (!session) return pintarLogin();
+  await entrar();
+}
+
+function pintarLogin(error) {
+  $('#tabs').hidden = true; $('#salir').hidden = true;
+  $('#app').innerHTML = `<div class="card stack" style="max-width:420px;margin:30px auto">
+    <h1 style="font-size:28px">Entrar al panel</h1>
+    ${sessionStorage.getItem('eo_pend') ? '<div class="msg info">Tienes un producto del atajo esperando. Entra para revisarlo.</div>' : ''}
+    ${error ? `<div class="msg err">${esc(error)}</div>` : ''}
+    <form id="login" class="stack">
+      <label class="f">Correo<input class="in" type="email" name="email" autocomplete="username" required></label>
+      <label class="f">Contraseña<input class="in" type="password" name="pass" autocomplete="current-password" required></label>
+      <button class="btn b-dark full" type="submit">Entrar</button>
+    </form></div>`;
+  $('#login').onsubmit = async e => {
+    e.preventDefault(); const f = new FormData(e.target); const b = e.target.querySelector('button'); b.disabled = true; b.textContent = 'Entrando…';
+    const { data, error } = await sb.auth.signInWithPassword({ email: f.get('email'), password: f.get('pass') });
+    if (error) return pintarLogin('Correo o contraseña incorrectos.');
+    session = data.session; await entrar();
+  };
+}
+
+async function entrar() {
+  const { data: ok, error } = await sb.rpc('es_admin');
+  if (error || ok !== true) { await sb.auth.signOut(); return pintarLogin('Este usuario no tiene permiso de administrador. Añade su correo a la tabla «admins» en Supabase.'); }
+  $('#tabs').hidden = false; $('#salir').hidden = false;
+  await cargar();
+  const pend = sessionStorage.getItem('eo_pend'); const err = sessionStorage.getItem('eo_err');
+  if (pend) { sessionStorage.removeItem('eo_pend'); abrirEditor(desdeImportado(JSON.parse(pend))); }
+  else if (err) { sessionStorage.removeItem('eo_err'); vista = 'importar'; pintar(); toast(err); }
+  else pintar();
+}
+
+async function cargar() {
+  const [{ data: p, error: e1 }, { data: v }] = await Promise.all([
+    sb.from('productos').select('*').order('creado', { ascending: false }),
+    sb.from('productos_privado').select('*')
+  ]);
+  if (e1) { toast('Error al cargar los productos'); PRODS = []; return; }
+  PRODS = p || []; PRIV = {}; (v || []).forEach(x => PRIV[x.producto_id] = x);
+}
+
+function pintar() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === vista && !ed));
+  if (ed) return pintarEditor();
+  if (vista === 'importar') return pintarImportar();
+  if (vista === 'atajo') return pintarAtajo();
+  pintarLista();
+}
+
+/* ---------- Lista de productos ---------- */
+function pintarLista() {
+  const q = busca.toLowerCase();
+  const list = PRODS.filter(p => (filtro === 'todos' || (filtro === 'pub' ? p.publicado : !p.publicado)) && (!q || p.nombre.toLowerCase().includes(q)));
+  const nPub = PRODS.filter(p => p.publicado).length;
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <div><h1 style="font-size:26px">Productos</h1><div class="small">${PRODS.length} en total · ${nPub} publicados</div></div>
+      <button class="btn b-brand" id="nuevo">+ Nuevo</button>
+    </div>
+    <div class="card" style="padding:12px 18px">
+      <div class="row" style="margin-bottom:6px">
+        <input class="in" id="busca" placeholder="Buscar producto…" value="${esc(busca)}" style="flex:1 1 200px">
+        <select class="in" id="filtro" style="flex:0 1 170px"><option value="todos">Todos</option><option value="pub">Publicados</option><option value="bor">Borradores</option></select>
+      </div>
+      ${list.length ? list.map(p => `
+        <div class="prow">
+          ${p.imagenes && p.imagenes[0] ? `<img class="thumb" src="${esc(p.imagenes[0])}" alt="" loading="lazy">` : '<div class="thumb">Sin foto</div>'}
+          <div class="pinfo">
+            <div class="pname">${esc(p.nombre)}</div>
+            <div class="small">${eur(p.precio)} · stock ${p.stock} · ${esc(CATS[p.categoria] || p.categoria)}</div>
+            <span class="tag ${p.publicado ? 't-pub' : 't-bor'}">${p.publicado ? 'Publicado' : 'Borrador'}</span>
+          </div>
+          <button class="btn b-ghost" data-edit="${p.id}" style="min-height:44px;padding:0 14px">Editar</button>
+        </div>`).join('') : `<div class="empty">${PRODS.length ? 'Ningún producto coincide.' : 'Todavía no hay productos. Importa uno desde un proveedor o crea uno nuevo.'}</div>`}
+    </div>`;
+  $('#filtro').value = filtro;
+  $('#filtro').onchange = e => { filtro = e.target.value; pintarLista(); };
+  $('#busca').oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; pintarLista(); const i = $('#busca'); i.focus(); i.setSelectionRange(pos, pos); };
+  $('#nuevo').onclick = () => abrirEditor(vacio());
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => abrirEditor(desdeFila(PRODS.find(p => p.id === b.dataset.edit))));
+}
+
+/* ---------- Importar ---------- */
+function pintarImportar() {
+  $('#app').innerHTML = `
+    <div class="card stack">
+      <h1 style="font-size:24px">Importar de un proveedor</h1>
+      <p class="muted" style="margin:0">Pega el enlace de la página del producto. Leo el nombre, las fotos, el precio y la descripción, y lo revisas antes de publicarlo.</p>
+      <form id="leer" class="stack">
+        <label class="f">Enlace del producto<input class="in" name="url" type="url" inputmode="url" placeholder="https://proveedor.com/producto/..." required></label>
+        <button class="btn b-dark" type="submit">Leer producto</button>
+      </form>
+      <div id="leerMsg"></div>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:19px">¿El proveedor pide iniciar sesión para ver precios?</h2>
+      <p class="muted" style="margin:0">Usa el <a href="#" id="irAtajo" style="font-weight:600">atajo del iPhone</a>: lee la página tal como la ves tú en Safari, con tu sesión abierta.</p>
+    </div>`;
+  $('#irAtajo').onclick = e => { e.preventDefault(); vista = 'atajo'; pintar(); };
+  $('#leer').onsubmit = async e => {
+    e.preventDefault(); const url = new FormData(e.target).get('url'); const b = e.target.querySelector('button');
+    b.disabled = true; b.textContent = 'Leyendo…'; $('#leerMsg').innerHTML = '';
+    try {
+      const r = await fetch('/api/leer?url=' + encodeURIComponent(url), { headers: { Authorization: 'Bearer ' + session.access_token } });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Error al leer el producto');
+      abrirEditor(desdeImportado(d));
+    } catch (err) {
+      $('#leerMsg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`;
+      b.disabled = false; b.textContent = 'Leer producto';
+    }
+  };
+}
+
+/* ---------- Atajo del iPhone ---------- */
+// Este código se ejecuta dentro de la página del proveedor, en Safari.
+function atajoFn(ORIGEN) {
+  (async () => {
+    const d = { url: location.href.split('#')[0], nombre: '', precio: null, moneda: '', imagenes: [], descripcion: '', marca: '', sku: '', caracteristicas: {} };
+    const limpio = t => String(t == null ? '' : t).replace(/<br\s*\/?>|<\/p>/gi, '\n').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+    const num = s => { if (typeof s === 'number') return s; s = String(s || '').replace(/[^\d.,]/g, ''); if (!s) return null; const c = s.lastIndexOf(','), p = s.lastIndexOf('.'); if (c > -1 && p > -1) s = c > p ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); else if (c > -1) s = /,\d{1,2}$/.test(s) ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, ''); else if ((s.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(s)) s = s.replace(/\./g, ''); const n = parseFloat(s); return isNaN(n) ? null : n; };
+    const addImg = u => { if (u && typeof u === 'object') u = u.url || u.contentUrl || ''; u = String(u || '').trim(); if (!u || u.startsWith('data:')) return; try { u = new URL(u.startsWith('//') ? 'https:' + u : u, location.href).href; } catch (e) { return; } if (!d.imagenes.includes(u) && d.imagenes.length < 12) d.imagenes.push(u); };
+    const meta = n => { const m = document.querySelector('meta[property="' + n + '"],meta[name="' + n + '"],meta[itemprop="' + n + '"]'); return m ? (m.getAttribute('content') || '') : ''; };
+    const buscar = o => { if (!o || typeof o !== 'object') return null; if (Array.isArray(o)) { for (const x of o) { const r = buscar(x); if (r) return r; } return null; } const t = [].concat(o['@type'] || []); if (t.includes('Product')) return o; if (t.includes('ProductGroup')) { const v = buscar(o.hasVariant) || {}; return Object.assign({}, v, { name: o.name || v.name, description: o.description || v.description, image: o.image || v.image, brand: o.brand || v.brand }); } return buscar(o['@graph'] || null); };
+    try {
+      if (window.Shopify && /\/products\//.test(location.pathname)) {
+        const r = await fetch(location.pathname.replace(/\/$/, '') + '.js');
+        if (r.ok) { const j = await r.json(); d.nombre = limpio(j.title); d.descripcion = limpio(j.description); d.marca = limpio(j.vendor); d.precio = j.price / 100; (j.images || []).forEach(addImg); }
+      }
+    } catch (e) {}
+    for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
+      let j; try { j = JSON.parse(s.textContent); } catch (e) { continue; }
+      const p = buscar(j); if (!p) continue;
+      d.nombre = d.nombre || limpio(p.name);
+      d.descripcion = d.descripcion || limpio(p.description);
+      d.marca = d.marca || limpio(p.brand && typeof p.brand === 'object' ? p.brand.name : p.brand);
+      d.sku = limpio(p.sku || p.gtin13 || p.mpn || '');
+      [].concat(p.image || []).forEach(addImg);
+      const of = [].concat(p.offers || [])[0] || {};
+      const pr = of.price != null ? of.price : of.lowPrice != null ? of.lowPrice : ([].concat(of.offers || [])[0] || {}).price;
+      if (d.precio == null && pr != null) d.precio = num(pr);
+      d.moneda = d.moneda || of.priceCurrency || '';
+      [].concat(p.additionalProperty || []).forEach(a => { if (a && a.name && a.value != null) d.caracteristicas[limpio(a.name)] = limpio(a.value); });
+      break;
+    }
+    d.nombre = d.nombre || limpio(meta('og:title')) || limpio((document.querySelector('h1') || {}).textContent) || document.title;
+    d.descripcion = d.descripcion || limpio(meta('og:description') || meta('description'));
+    if (d.precio == null) { const m = meta('product:price:amount') || meta('og:price:amount') || meta('price'); if (m) d.precio = num(m); }
+    if (d.precio == null) { const el = document.querySelector('[itemprop="price"]'); if (el) d.precio = num(el.getAttribute('content') || el.textContent); }
+    if (d.precio == null) {
+      for (const el of document.querySelectorAll('[class*="price" i],[class*="precio" i],[id*="price" i]')) {
+        const m = (el.textContent || '').match(/(\d[\d.\s]{0,9}[,.]\d{2})\s*€|€\s*(\d[\d.\s]{0,9}[,.]\d{2})/);
+        if (m) { d.precio = num(m[1] || m[2]); break; }
+      }
+    }
+    d.moneda = d.moneda || meta('product:price:currency') || meta('og:price:currency') || '';
+    if (d.imagenes.length < 2) { addImg(meta('og:image')); Array.from(document.images).filter(i => (i.naturalWidth || 0) >= 400 && (i.naturalHeight || 0) >= 300).forEach(i => addImg(i.currentSrc || i.src)); }
+    d.descripcion = d.descripcion.slice(0, 2500);
+    completion(ORIGEN + '/admin/#importar=' + encodeURIComponent(JSON.stringify(d)));
+  })().catch(e => completion(ORIGEN + '/admin/#error=' + encodeURIComponent(String((e && e.message) || e))));
+}
+const codigoAtajo = () => '(' + atajoFn.toString() + ')(' + JSON.stringify(location.origin) + ');';
+
+function pintarAtajo() {
+  $('#app').innerHTML = `
+    <div class="card stack">
+      <h1 style="font-size:24px">Atajo «Añadir a EpicOutlet»</h1>
+      <p class="muted" style="margin:0">Se configura una sola vez. Después, en la página de cualquier producto del proveedor en Safari: <strong>Compartir → Añadir a EpicOutlet</strong>, y el producto se abre aquí listo para revisar.</p>
+      <ol class="steps">
+        <li>Abre la app <strong>Atajos</strong> y pulsa <strong>+</strong>. Ponle de nombre <strong>Añadir a EpicOutlet</strong>.</li>
+        <li>Pulsa <strong>ⓘ</strong> (abajo) y activa <strong>Mostrar en la hoja de compartir</strong>. En los tipos de entrada, deja solo <strong>Páginas web de Safari</strong>.</li>
+        <li>Añade la acción <strong>Ejecutar JavaScript en página web</strong>. Borra el código que trae y pega el de abajo.</li>
+        <li>Añade la acción <strong>Abrir URL</strong>: debe usar el <strong>Resultado de JavaScript</strong>.</li>
+        <li>La primera vez que lo uses en una web, iOS te pedirá permiso: pulsa <strong>Permitir siempre</strong>.</li>
+      </ol>
+      <button class="btn b-dark" id="copiar">Copiar código</button>
+      <pre id="codigo">${esc(codigoAtajo())}</pre>
+      <p class="small" style="margin:0">El código ya lleva la dirección de este panel (${esc(location.origin)}). Si cambias de dominio, vuelve aquí y cópialo otra vez.</p>
+    </div>`;
+  $('#copiar').onclick = async () => {
+    try { await navigator.clipboard.writeText(codigoAtajo()); toast('Código copiado'); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents($('#codigo')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast('Selecciona y copia el código'); }
+  };
+}
+
+/* ---------- Editor ---------- */
+function vacio() {
+  return { id: null, slug: '', nombre: '', categoria: 'hogar', estado: 'Nuevo', marca: '', precio: '', precio_anterior: '', stock: 1, top: false, publicado: false,
+    descripcion: '', specs: '', imagenes: [], coste: '', proveedor: '', origen_url: '', notas: '', moneda: '' };
+}
+function desdeFila(p) {
+  const v = PRIV[p.id] || {};
+  return { ...vacio(), id: p.id, slug: p.slug, nombre: p.nombre, categoria: p.categoria, estado: p.estado, marca: p.marca || '', precio: p.precio, precio_anterior: p.precio_anterior ?? '',
+    stock: p.stock, top: p.top, publicado: p.publicado, descripcion: p.descripcion || '',
+    specs: Object.entries(p.caracteristicas || {}).map(([k, x]) => `${k}: ${x}`).join('\n'),
+    imagenes: (p.imagenes || []).map(src => ({ src, guardada: true })), coste: v.coste ?? '', proveedor: v.proveedor || '', origen_url: v.origen_url || '', notas: v.notas || '' };
+}
+function adivinarCategoria(t) {
+  t = (t || '').toLowerCase();
+  const reglas = [[/reloj|watch|smartwatch/, 'relojes'], [/perro|gato|mascota|pet\b|dog|cat\b|arenero|correa para/, 'mascotas'], [/beb[eé]|niñ|infantil|juguete|peluche|toy|baby/, 'bebe'],
+    [/ram\b|ssd|usb|auricular|cargador|móvil|movil|tablet|port[aá]til|ordenador|cable hdmi|altavoz|bluetooth|gaming|teclado|rat[oó]n/, 'tecnologia'],
+    [/crema|perfume|desodorante|champ[uú]|maquillaje|cosm[eé]t|afeitad|belleza|sérum|serum/, 'belleza'],
+    [/deport|fitness|bicicleta|ciclismo|ski|snowboard|running|yoga|pesa|mancuerna|isot[oó]nic/, 'deporte']];
+  for (const [re, c] of reglas) if (re.test(t)) return c;
+  return 'hogar';
+}
+function desdeImportado(d) {
+  let host = ''; try { host = new URL(d.url).hostname.replace(/^www\./, ''); } catch (e) {}
+  return { ...vacio(), nombre: d.nombre || '', marca: d.marca || '', descripcion: d.descripcion || '', categoria: adivinarCategoria((d.nombre || '') + ' ' + (d.descripcion || '').slice(0, 300)),
+    specs: Object.entries(d.caracteristicas || {}).map(([k, x]) => `${k}: ${x}`).join('\n') + (d.sku ? `${Object.keys(d.caracteristicas || {}).length ? '\n' : ''}Referencia: ${d.sku}` : ''),
+    imagenes: (d.imagenes || []).map(src => ({ src, remota: true })), coste: d.precio ?? '', moneda: d.moneda || '', proveedor: host, origen_url: d.url || '', importado: true };
+}
+
+function abrirEditor(x) { ed = x; window.scrollTo(0, 0); pintar(); }
+
+function pintarEditor() {
+  const e = ed;
+  const coste = nOrNull(e.coste), precio = nOrNull(e.precio);
+  const margen = coste && precio ? `Ganas ${eur(precio - coste)} por unidad (${Math.round((precio - coste) / precio * 100)} % del precio)` : '';
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <button class="btn b-ghost" id="volver" style="min-height:44px">← Volver</button>
+      <span class="small">${e.id ? 'Editando producto' : e.importado ? 'Producto importado' : 'Producto nuevo'}</span>
+    </div>
+    ${e.importado ? `<div class="msg info" style="margin-bottom:14px">Leído de <strong>${esc(e.proveedor)}</strong>. Revisa el nombre, pon tu precio de venta y elige el estado antes de publicar.${e.moneda && e.moneda !== 'EUR' ? ` <strong>Ojo: el precio del proveedor está en ${esc(e.moneda)}.</strong>` : ''}</div>` : ''}
+    <form id="form" class="stack" novalidate>
+      <div class="card stack">
+        <h2 style="font-size:18px">Fotos</h2>
+        <div class="imgs" id="imgs">
+          ${e.imagenes.map((im, i) => `<div class="im ${i === 0 ? 'main' : ''}"><img src="${esc(im.file ? im.preview : im.src)}" alt="" referrerpolicy="no-referrer">${i === 0 ? '<span class="lbl">Principal</span>' : ''}
+            <div class="ctr">${i > 0 ? `<button type="button" data-first="${i}" aria-label="Poner como principal">★</button>` : '<span></span>'}<button type="button" data-delimg="${i}" aria-label="Quitar foto">✕</button></div></div>`).join('')}
+          <label class="addimg">+ Añadir fotos<span style="font-weight:400">de la galería o cámara</span><input type="file" accept="image/*" multiple id="files" hidden></label>
+        </div>
+        ${e.imagenes.some(i => i.remota) ? '<p class="small" style="margin:0">Las fotos del proveedor se copian a tu tienda al guardar. Quita las que no quieras.</p>' : ''}
+      </div>
+
+      <div class="card stack">
+        <h2 style="font-size:18px">Producto</h2>
+        <label class="f">Nombre *<input class="in" name="nombre" value="${esc(e.nombre)}" required></label>
+        <div class="g2">
+          <label class="f">Categoría<select class="in" name="categoria">${Object.entries(CATS).map(([k, n]) => `<option value="${k}" ${e.categoria === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label class="f">Estado<select class="in" name="estado">${ESTADOS.map(s => `<option ${e.estado === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+        </div>
+        <label class="f">Marca<input class="in" name="marca" value="${esc(e.marca)}"></label>
+        <label class="f">Descripción<textarea class="in" name="descripcion" rows="6">${esc(e.descripcion)}</textarea></label>
+        <label class="f">Características <span class="small" style="font-weight:400">(una por línea: «Diámetro: 44 mm»)</span><textarea class="in" name="specs" rows="4" style="min-height:90px">${esc(e.specs)}</textarea></label>
+      </div>
+
+      <div class="card stack">
+        <h2 style="font-size:18px">Precio y stock</h2>
+        <div class="g3 keep">
+          <label class="f">Precio venta *<input class="in" name="precio" inputmode="decimal" value="${esc(e.precio)}" placeholder="0,00"></label>
+          <label class="f">Precio tachado<input class="in" name="precio_anterior" inputmode="decimal" value="${esc(e.precio_anterior)}" placeholder="PVP"></label>
+          <label class="f">Stock<input class="in" name="stock" inputmode="numeric" value="${esc(e.stock)}"></label>
+        </div>
+        <p class="small" style="margin:0">El precio tachado es el PVP de referencia. La tienda calcula sola el % de descuento y lo que ahorra el cliente.</p>
+        <label class="check"><input type="checkbox" name="top" ${e.top ? 'checked' : ''}>Mostrar en «Top ventas»</label>
+      </div>
+
+      <div class="card stack">
+        <h2 style="font-size:18px">Datos internos <span class="small" style="font-weight:500">· solo los ves tú</span></h2>
+        <div class="g2">
+          <label class="f">Coste (lo que pagas)<input class="in" name="coste" inputmode="decimal" value="${esc(e.coste)}"></label>
+          <label class="f">Proveedor<input class="in" name="proveedor" value="${esc(e.proveedor)}"></label>
+        </div>
+        <div class="margin" id="margen">${margen}</div>
+        <label class="f">Enlace del proveedor<input class="in" name="origen_url" value="${esc(e.origen_url)}"></label>
+        ${e.origen_url ? `<a href="${esc(e.origen_url)}" target="_blank" rel="noopener" class="small" style="font-weight:600">Abrir en el proveedor ↗</a>` : ''}
+        <label class="f">Notas<textarea class="in" name="notas" rows="2" style="min-height:70px">${esc(e.notas)}</textarea></label>
+      </div>
+
+      <div class="card">
+        <label class="check"><input type="checkbox" name="publicado" ${e.publicado ? 'checked' : ''}>Publicado (visible en la tienda)</label>
+      </div>
+      <div id="estadoGuardar"></div>
+      <div class="sticky-save">
+        <button class="btn b-brand" type="submit" id="guardar">Guardar</button>
+      </div>
+      ${e.id ? '<button class="btn b-danger" type="button" id="borrar">Borrar producto</button>' : ''}
+    </form>`;
+
+  const form = $('#form');
+  const leerForm = () => { const f = new FormData(form); ['nombre', 'categoria', 'estado', 'marca', 'descripcion', 'specs', 'precio', 'precio_anterior', 'stock', 'coste', 'proveedor', 'origen_url', 'notas'].forEach(k => ed[k] = f.get(k) ?? ''); ed.top = !!f.get('top'); ed.publicado = !!f.get('publicado'); };
+  form.oninput = () => {
+    leerForm();
+    const c = nOrNull(ed.coste), p = nOrNull(ed.precio);
+    $('#margen').textContent = c && p ? `Ganas ${eur(p - c)} por unidad (${Math.round((p - c) / p * 100)} % del precio)` : '';
+  };
+  $('#volver').onclick = () => { if (ed.importado && !ed.id && !confirm('¿Salir sin guardar este producto?')) return; ed = null; pintar(); };
+  $('#files').onchange = ev => {
+    leerForm();
+    [...ev.target.files].forEach(file => ed.imagenes.push({ file, preview: URL.createObjectURL(file) }));
+    pintarEditor();
+  };
+  document.querySelectorAll('[data-delimg]').forEach(b => b.onclick = () => { leerForm(); ed.imagenes.splice(+b.dataset.delimg, 1); pintarEditor(); });
+  document.querySelectorAll('[data-first]').forEach(b => b.onclick = () => { leerForm(); const [x] = ed.imagenes.splice(+b.dataset.first, 1); ed.imagenes.unshift(x); pintarEditor(); });
+  form.onsubmit = ev => { ev.preventDefault(); leerForm(); guardar(); };
+  if ($('#borrar')) $('#borrar').onclick = borrar;
+}
+
+const slugify = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'producto';
+
+/* Reduce la foto a 1600 px y la guarda en JPG o WebP */
+async function optimizar(blob) {
+  try {
+    if (!/^image\/(jpeg|png|webp|heic|heif)/.test(blob.type) && blob.type) return blob;
+    const bmp = await createImageBitmap(blob);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    if (k === 1 && blob.size < 600000 && /jpeg|webp/.test(blob.type)) return blob;
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(b => r(b || blob), 'image/jpeg', 0.86));
+  } catch (e) { return blob; }
+}
+
+async function subirFoto(blob, slug, i) {
+  blob = await optimizar(blob);
+  const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg').replace(/[^a-z0-9]/g, '') || 'jpg';
+  const path = `${slug}/${Date.now()}-${i}.${ext}`;
+  const { error } = await sb.storage.from('productos').upload(path, blob, { contentType: blob.type || 'image/jpeg', cacheControl: '31536000', upsert: false });
+  if (error) throw error;
+  return sb.storage.from('productos').getPublicUrl(path).data.publicUrl;
+}
+
+async function guardar() {
+  const e = ed, st = $('#estadoGuardar'), btn = $('#guardar');
+  const precio = nOrNull(e.precio), ant = nOrNull(e.precio_anterior), stock = parseInt(e.stock, 10);
+  const errores = [];
+  if (!e.nombre.trim()) errores.push('Escribe el nombre del producto.');
+  if (precio == null || precio <= 0) errores.push('Pon un precio de venta.');
+  if (ant != null && ant <= precio) errores.push('El precio tachado tiene que ser mayor que el precio de venta (o déjalo vacío).');
+  if (isNaN(stock) || stock < 0) errores.push('El stock tiene que ser un número.');
+  if (e.publicado && !e.imagenes.length) errores.push('Añade al menos una foto antes de publicar.');
+  if (errores.length) { st.innerHTML = `<div class="msg err">${errores.map(esc).join('<br>')}</div>`; st.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+
+  btn.disabled = true; btn.textContent = 'Guardando…'; st.innerHTML = '';
+  try {
+    const slug = e.slug || `${slugify(e.nombre)}-${Math.random().toString(36).slice(2, 6)}`;
+    const fotos = []; let fallos = 0;
+    for (let i = 0; i < e.imagenes.length; i++) {
+      const im = e.imagenes[i];
+      if (im.guardada) { fotos.push(im.src); continue; }
+      btn.textContent = `Subiendo fotos ${i + 1}/${e.imagenes.length}…`;
+      try {
+        let blob = im.file;
+        if (!blob) {
+          const r = await fetch('/api/imagen?url=' + encodeURIComponent(im.src), { headers: { Authorization: 'Bearer ' + session.access_token } });
+          if (!r.ok) throw new Error('descarga');
+          blob = await r.blob();
+        }
+        const url = await subirFoto(blob, slug, i);
+        e.imagenes[i] = { src: url, guardada: true };
+        fotos.push(url);
+      } catch (err) { fallos++; }
+    }
+    btn.textContent = 'Guardando…';
+    const caracteristicas = {};
+    e.specs.split('\n').forEach(l => { const i = l.indexOf(':'); if (i > 0) { const k = l.slice(0, i).trim(), v = l.slice(i + 1).trim(); if (k && v) caracteristicas[k] = v; } });
+    const fila = { slug, nombre: e.nombre.trim(), categoria: e.categoria, estado: e.estado, marca: e.marca.trim() || null, precio, precio_anterior: ant, stock,
+      descripcion: e.descripcion.trim(), caracteristicas, imagenes: fotos, top: e.top, publicado: e.publicado && fotos.length > 0 };
+    let id = e.id;
+    if (id) { const { error } = await sb.from('productos').update(fila).eq('id', id); if (error) throw error; }
+    else { const { data, error } = await sb.from('productos').insert(fila).select('id').single(); if (error) throw error; id = data.id; }
+    const { error: e2 } = await sb.from('productos_privado').upsert({ producto_id: id, coste: nOrNull(e.coste), proveedor: e.proveedor.trim() || null, origen_url: e.origen_url.trim() || null, notas: e.notas.trim() || null });
+    if (e2) throw e2;
+    await cargar();
+    ed = null; vista = 'lista'; pintar();
+    toast(fallos ? `Guardado. ${fallos} foto${fallos > 1 ? 's' : ''} no se ${fallos > 1 ? 'han' : 'ha'} podido copiar.` : fila.publicado ? 'Guardado y publicado' : 'Guardado como borrador');
+  } catch (err) {
+    btn.disabled = false; btn.textContent = 'Guardar';
+    st.innerHTML = `<div class="msg err">No se ha podido guardar: ${esc(err.message || err)}</div>`;
+  }
+}
+
+async function borrar() {
+  if (!confirm('¿Borrar este producto? No se puede deshacer.')) return;
+  const e = ed;
+  const rutas = (e.imagenes || []).filter(i => i.guardada && i.src.includes('/storage/v1/object/public/productos/')).map(i => decodeURIComponent(i.src.split('/storage/v1/object/public/productos/')[1]));
+  const { error } = await sb.from('productos').delete().eq('id', e.id);
+  if (error) return toast('No se ha podido borrar');
+  if (rutas.length) await sb.storage.from('productos').remove(rutas);
+  await cargar(); ed = null; pintar(); toast('Producto borrado');
+}
+
+/* ---------- Navegación ---------- */
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  if (ed && ed.importado && !ed.id && !confirm('¿Salir sin guardar este producto?')) return;
+  ed = null; vista = b.dataset.v; pintar();
+});
+$('#salir').onclick = async () => { await sb.auth.signOut(); session = null; ed = null; pintarLogin(); };
+iniciar();
+</script>
+</body>
+</html>
