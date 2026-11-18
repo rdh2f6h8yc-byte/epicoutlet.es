@@ -274,8 +274,8 @@ function pintarImportar() {
       <p class="muted" style="margin:0">Pega el enlace de <strong>un producto</strong> o de <strong>una categoría entera</strong>. Leo el nombre, las fotos, el precio y la descripción con tu margen ya aplicado.</p>
       <form id="leer" class="stack">
         ${LOTE ? `<div class="msg info">Tienes una lista abierta: <a href="#" id="volverLote" style="font-weight:700">${esc(LOTE.titulo)} (${LOTE.productos.length} productos)</a></div>` : ''}
-        <label class="f">Enlace del producto o de la categoría<input class="in" name="url" type="url" inputmode="url" placeholder="https://proveedor.com/collections/..." required></label>
-        <button class="btn b-dark" type="submit">Leer producto</button>
+        <label class="f">Enlace del producto o de la categoría<input class="in" name="url" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="proveedor.com/collections/..." required></label>
+        <button class="btn b-dark" type="submit">Leer enlace</button>
       </form>
       <div id="leerMsg"></div>
     </div>
@@ -286,14 +286,15 @@ function pintarImportar() {
   $('#irAtajo').onclick = e => { e.preventDefault(); vista = 'atajo'; pintar(); };
   if ($('#volverLote')) $('#volverLote').onclick = e => { e.preventDefault(); vista = 'lote'; pintar(); };
   $('#leer').onsubmit = async e => {
-    e.preventDefault(); const url = new FormData(e.target).get('url'); const b = e.target.querySelector('button');
+    e.preventDefault(); let url = String(new FormData(e.target).get('url') || '').trim(); const b = e.target.querySelector('button');
+    if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url.replace(/^\/+/, '');
     b.disabled = true; b.textContent = 'Leyendo…'; $('#leerMsg').innerHTML = '';
     try {
       const d = await leerUrl(url);
       if (d.tipo === 'lista') abrirLote(d); else abrirEditor(desdeImportadoConPrecio(d));
     } catch (err) {
       $('#leerMsg').innerHTML = `<div class="msg err">${esc(err.message)}</div>`;
-      b.disabled = false; b.textContent = 'Leer producto';
+      b.disabled = false; b.textContent = 'Leer enlace';
     }
   };
 }
