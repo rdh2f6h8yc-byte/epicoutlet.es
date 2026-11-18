@@ -10,6 +10,10 @@ Tienda online de EpicOutlet para España: liquidaciones de stock, sobrestock, de
 | `admin/index.html` | Panel privado (`/admin`) para añadir, editar y publicar productos. |
 | `api/leer.js` | Lee un producto desde el enlace de un proveedor (solo administrador). |
 | `api/imagen.js` | Descarga las fotos del proveedor para guardarlas en la tienda (solo administrador). |
+| `api/checkout.js` | Crea el pago en Stripe con los precios y el stock de la base de datos. |
+| `api/stripe-webhook.js` | Recibe el aviso de pago de Stripe, marca el pedido como pagado y resta stock. |
+| `api/pedido.js` | Número de pedido para la página de «gracias». |
+| `supabase/pedidos.sql` | Tabla de pedidos (si ya habías ejecutado `schema.sql` antes). |
 | `config.js` | Dirección y clave pública de Supabase. |
 | `supabase/schema.sql` | Tablas, seguridad y carpeta de fotos de Supabase. |
 
@@ -34,7 +38,19 @@ Si `config.js` está vacío, la tienda enseña productos de ejemplo.
 En el editor revisas el nombre, pones el precio de venta, el precio tachado (PVP), el estado y el stock, y marcas *Publicado*.
 El coste, el proveedor y su enlace se guardan aparte y nunca se ven en la tienda.
 
-## Pendiente
+## Pagos con Stripe (una sola vez)
 
-- Conectar la pasarela de pago (botón «Finalizar compra») y poner su nombre en `[PASARELA DE PAGO]`.
+1. **Supabase:** ejecuta `supabase/pedidos.sql` en *SQL Editor* (si instalaste antes de los pedidos).
+2. **Stripe:** en *Developers → API keys* copia la *Secret key* (`sk_test_...` para probar, `sk_live_...` para vender).
+3. **Webhook:** en *Developers → Webhooks → Add endpoint*, dirección `https://TU-DOMINIO/api/stripe-webhook`, eventos
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`.
+   Copia su *Signing secret* (`whsec_...`).
+4. **Supabase:** en *Project Settings → API Keys* copia la *Secret key* (`sb_secret_...`).
+5. **Vercel → Settings → Environment Variables** (nunca en GitHub):
+   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SECRET_KEY`. Después, *Redeploy*.
+6. **Panel → Ajustes → Gastos de envío:** pon el precio del envío y, si quieres, a partir de cuánto es gratis.
+
+Cuando un cliente paga, el pedido aparece en *Panel → Pedidos* con el enlace para comprarlo al proveedor y la dirección del cliente lista para copiar.
+
+## Pendiente
 - SEO: direcciones propias por producto, sitemap y datos estructurados.

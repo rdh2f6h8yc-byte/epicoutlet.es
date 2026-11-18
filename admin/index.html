@@ -84,6 +84,7 @@ ol.steps li{margin-bottom:8px}
   <button id="salir" hidden>Salir</button>
 </div>
 <nav class="tabs" id="tabs" hidden>
+  <button data-v="pedidos" id="tabPedidos">Pedidos</button>
   <button data-v="lista">Productos</button>
   <button data-v="importar">Importar</button>
   <button data-v="atajo">Atajo iPhone</button>
@@ -111,12 +112,15 @@ const CFG = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : {};
 /* ---------- Margen automático ---------- */
 const AJ_DEF = { margen: 40, iva: 21, costeConIva: false, redondeo: '90', usarPvp: true, cat: {} };
 let AJ = { ...AJ_DEF };
+let ENV = { precio: null, gratisDesde: null };
 async function cargarAjustes() {
   try {
     const { data, error } = await sb.from('ajustes').select('valor').eq('clave', 'precios').maybeSingle();
     if (error) throw error;
     if (data) AJ = { ...AJ_DEF, ...data.valor, cat: { ...((data.valor || {}).cat || {}) }, _guardado: true };
     AJ._db = true;
+    const { data: e } = await sb.from('ajustes').select('valor').eq('clave', 'envio').maybeSingle();
+    if (e && e.valor) ENV = { precio: e.valor.precio ?? null, gratisDesde: e.valor.gratisDesde ?? null };
   } catch (e) {
     try { const l = JSON.parse(localStorage.getItem('eo_ajustes') || 'null'); if (l) AJ = { ...AJ_DEF, ...l, _guardado: true }; } catch (x) {}
     AJ._db = false;
@@ -150,6 +154,7 @@ function ganancia(coste, precio) {
 const fmtPrecio = n => n == null ? '' : n.toFixed(2).replace('.', ',');
 const ivaTxt = () => AJ.costeConIva ? 'coste con IVA' : `+ IVA ${AJ.iva} %`;
 
+let PEDIDOS = [], pedidoAbierto = null, filtroPed = 'gestionar';
 let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null, filtro = 'todos', busca = '';
 
 /* Producto que llega desde el atajo del iPhone */
@@ -204,12 +209,21 @@ async function entrar() {
   const { data: ok, error } = await sb.rpc('es_admin');
   if (error || ok !== true) { await sb.auth.signOut(); return pintarLogin('Este usuario no tiene permiso de administrador. Añade su correo a la tabla «admins» en Supabase.'); }
   $('#tabs').hidden = false; $('#salir').hidden = false;
-  await Promise.all([cargar(), cargarAjustes()]);
+  await Promise.all([cargar(), cargarAjustes(), cargarPedidos()]);
+  if (PEDIDOS.some(p => p.estado === 'pagado')) vista = 'pedidos';
   const pend = sessionStorage.getItem('eo_pend'), err = sessionStorage.getItem('eo_err'), lista = sessionStorage.getItem('eo_lista');
   if (pend) { sessionStorage.removeItem('eo_pend'); await abrirDelAtajo(JSON.parse(pend)); }
   else if (lista) { sessionStorage.removeItem('eo_lista'); await abrirEnlace(lista); }
   else if (err) { sessionStorage.removeItem('eo_err'); vista = 'importar'; pintar(); toast(err); }
   else pintar();
+}
+
+async function cargarPedidos() {
+  const { data, error } = await sb.from('pedidos').select('*').neq('estado', 'pendiente').order('creado', { ascending: false }).limit(500);
+  PEDIDOS = error ? [] : (data || []);
+  PEDIDOS._error = !!error;
+  const n = PEDIDOS.filter(p => p.estado === 'pagado').length;
+  const t = $('#tabPedidos'); if (t) t.textContent = n ? `Pedidos (${n})` : 'Pedidos';
 }
 
 async function cargar() {
@@ -228,6 +242,7 @@ function pintar() {
   if (vista === 'atajo') return pintarAtajo();
   if (vista === 'ajustes') return pintarAjustes();
   if (vista === 'lote' && LOTE) return pintarLote();
+  if (vista === 'pedidos') return pedidoAbierto ? pintarPedido() : pintarPedidos();
   pintarLista();
 }
 
@@ -376,6 +391,147 @@ function pintarAtajo() {
   };
 }
 
+/* ---------- Pedidos ---------- */
+const EST_PED = {
+  pagado: ['Pagado · por pedir', '#FFF1E7', '#B43C00'],
+  pedido_proveedor: ['Pedido al proveedor', '#E6EEF8', '#1F4E86'],
+  enviado: ['Enviado', '#F1ECFA', '#55348F'],
+  entregado: ['Entregado', '#E3F2E8', '#1D6B3A'],
+  cancelado: ['Cancelado', '#F4F4F6', '#5C5C64'],
+  reembolsado: ['Reembolsado', '#F4F4F6', '#5C5C64'],
+  pendiente: ['Sin pagar', '#F4F4F6', '#5C5C64']
+};
+const chipPed = e => { const [t, bg, c] = EST_PED[e] || [e, '#F4F4F6', '#5C5C64']; return `<span class="tag" style="background:${bg};color:${c}">${t}</span>`; };
+const fecha = d => d ? new Date(d).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+const dirTexto = p => { const a = p.direccion || {}; return [p.cliente_nombre, a.line1, a.line2, [a.postal_code, a.city].filter(Boolean).join(' '), a.state, a.country === 'ES' ? 'España' : a.country, p.cliente_telefono].filter(Boolean).join('\n'); };
+const costeDe = id => { const v = (PRIV[id] || {}).coste; return v == null ? null : Number(v); };
+const urlProv = id => (PRIV[id] || {}).origen_url || '';
+
+function pintarPedidos() {
+  const grupos = { gestionar: ['pagado', 'pedido_proveedor'], enviados: ['enviado', 'entregado'], todos: null };
+  const list = PEDIDOS.filter(p => !grupos[filtroPed] || grupos[filtroPed].includes(p.estado));
+  const porPedir = PEDIDOS.filter(p => p.estado === 'pagado').length;
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <div><h1 style="font-size:26px">Pedidos</h1><div class="small">${porPedir ? `<strong style="color:var(--brand-dark)">${porPedir} por pedir al proveedor</strong>` : 'Nada pendiente de pedir'}</div></div>
+      <button class="btn b-ghost" id="recargarPed" style="min-height:44px">Actualizar</button>
+    </div>
+    ${PEDIDOS._error ? '<div class="msg err" style="margin-bottom:12px">No se pueden leer los pedidos. Ejecuta <code>supabase/pedidos.sql</code> en Supabase → SQL Editor.</div>' : ''}
+    <div class="row" style="margin-bottom:12px">
+      ${[['gestionar', 'Por gestionar'], ['enviados', 'Enviados'], ['todos', 'Todos']].map(([k, n]) => `<button class="btn ${filtroPed === k ? 'b-dark' : 'b-ghost'}" data-fp="${k}" style="min-height:40px;padding:0 14px;font-size:14px">${n}</button>`).join('')}
+    </div>
+    <div class="card" style="padding:6px 18px">
+      ${list.length ? list.map(p => `
+        <button class="prow" data-ped="${p.id}" style="width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer">
+          ${(p.productos[0] || {}).imagen ? `<img class="thumb" src="${esc(p.productos[0].imagen)}" alt="">` : '<div class="thumb">—</div>'}
+          <div class="pinfo">
+            <div class="pname">#${p.numero} · ${esc(p.cliente_nombre || 'Cliente')}</div>
+            <div class="small">${fecha(p.pagado || p.creado)} · ${p.productos.reduce((a, l) => a + l.cantidad, 0)} art. · <strong style="color:var(--ink)">${eur(p.total)}</strong></div>
+            ${chipPed(p.estado)}
+          </div>
+          <span aria-hidden="true" style="color:var(--muted);font-size:20px">›</span>
+        </button>`).join('') : `<div class="empty">${filtroPed === 'gestionar' ? 'No hay pedidos por gestionar.' : 'No hay pedidos.'}</div>`}
+    </div>`;
+  document.querySelectorAll('[data-fp]').forEach(b => b.onclick = () => { filtroPed = b.dataset.fp; pintarPedidos(); });
+  document.querySelectorAll('[data-ped]').forEach(b => b.onclick = () => { pedidoAbierto = b.dataset.ped; window.scrollTo(0, 0); pintar(); });
+  $('#recargarPed').onclick = async () => { await Promise.all([cargarPedidos(), cargar()]); pintarPedidos(); toast('Pedidos actualizados'); };
+}
+
+function pintarPedido() {
+  const p = PEDIDOS.find(x => x.id === pedidoAbierto);
+  if (!p) { pedidoAbierto = null; return pintarPedidos(); }
+  const coste = p.productos.reduce((a, l) => a + (costeDe(l.producto_id) ?? NaN) * l.cantidad, 0);
+  const ivaF = 1 + AJ.iva / 100, costeNeto = AJ.costeConIva ? coste / ivaF : coste;
+  const beneficio = isNaN(coste) ? null : Number(p.total) / ivaF - costeNeto;
+  const dir = dirTexto(p);
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <button class="btn b-ghost" id="volverPed" style="min-height:44px">← Pedidos</button>
+      ${chipPed(p.estado)}
+    </div>
+    <div class="card stack">
+      <div class="row" style="justify-content:space-between"><h1 style="font-size:24px">Pedido #${p.numero}</h1><strong style="font-size:22px">${eur(p.total)}</strong></div>
+      <div class="small">Pagado el ${fecha(p.pagado || p.creado)}${p.stripe_pago ? ` · <a href="https://dashboard.stripe.com/payments/${esc(p.stripe_pago)}" target="_blank" rel="noopener">Ver pago en Stripe ↗</a>` : ''}</div>
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:18px">1. Compra cada producto en el proveedor</h2>
+      ${p.productos.map(l => { const c = costeDe(l.producto_id), u = urlProv(l.producto_id); return `
+        <div class="prow" style="align-items:flex-start">
+          ${l.imagen ? `<img class="thumb" src="${esc(l.imagen)}" alt="">` : '<div class="thumb">—</div>'}
+          <div class="pinfo">
+            <div style="font-weight:600;font-size:14px;line-height:1.35">${esc(l.nombre)}</div>
+            <div class="small">${l.cantidad} × ${eur(l.precio)}${c != null ? ` · coste ${eur(c)}` : ''}</div>
+            ${u ? `<a class="btn b-dark" href="${esc(u)}" target="_blank" rel="noopener" style="min-height:40px;margin-top:8px;font-size:14px">Comprar en ${esc(hostDe(u))} ↗</a>` : '<div class="small" style="color:var(--err)">Sin enlace del proveedor</div>'}
+          </div>
+        </div>`; }).join('')}
+      <div class="small">Al comprar, pon como dirección de envío la del cliente:</div>
+      <pre id="dirCli" style="background:var(--soft);color:var(--ink);font-size:14px;font-family:Inter,sans-serif;max-height:none">${esc(dir || 'Sin dirección')}</pre>
+      <div class="row">
+        <button class="btn b-line" id="copiarDir" style="min-height:44px">Copiar dirección</button>
+        ${p.cliente_email ? `<button class="btn b-ghost" id="copiarMail" style="min-height:44px">Copiar correo</button>` : ''}
+      </div>
+      <div class="small">${p.cliente_email ? `Correo: <a href="mailto:${esc(p.cliente_email)}">${esc(p.cliente_email)}</a>` : ''}${p.cliente_telefono ? ` · Tel: <a href="tel:${esc(p.cliente_telefono)}">${esc(p.cliente_telefono)}</a>` : ''}</div>
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:18px">2. Seguimiento</h2>
+      <label class="f">Nº de pedido en el proveedor<input class="in" id="refProv" value="${esc(p.ref_proveedor || '')}"></label>
+      <div class="g2">
+        <label class="f">Transportista<input class="in" id="transp" value="${esc(p.transportista || '')}" placeholder="SEUR, GLS, Correos…"></label>
+        <label class="f">Nº de seguimiento<input class="in" id="seguim" value="${esc(p.seguimiento || '')}"></label>
+      </div>
+      <label class="f">Notas<textarea class="in" id="notasPed" rows="2" style="min-height:70px">${esc(p.notas || '')}</textarea></label>
+      <div class="row">
+        ${p.estado === 'pagado' ? '<button class="btn b-brand" data-est="pedido_proveedor">Ya lo he pedido al proveedor</button>' : ''}
+        ${p.estado === 'pedido_proveedor' ? '<button class="btn b-brand" data-est="enviado">Marcar como enviado</button>' : ''}
+        ${p.estado === 'enviado' ? '<button class="btn b-brand" data-est="entregado">Marcar como entregado</button>' : ''}
+        <button class="btn b-line" data-est="">Guardar</button>
+      </div>
+      ${['enviado', 'entregado'].includes(p.estado) && p.cliente_email ? `<a class="btn b-dark" id="avisar" href="${mailSeguimiento(p)}">Avisar al cliente por correo</a>` : ''}
+    </div>
+
+    <div class="card stack">
+      <h2 style="font-size:18px">Resumen</h2>
+      <div class="row" style="justify-content:space-between"><span class="muted">Productos</span><span>${eur(p.subtotal)}</span></div>
+      <div class="row" style="justify-content:space-between"><span class="muted">Envío cobrado</span><span>${eur(p.envio)}</span></div>
+      <div class="row" style="justify-content:space-between"><span class="muted">Coste en el proveedor</span><span>${isNaN(coste) ? '—' : eur(coste)}</span></div>
+      ${beneficio != null ? `<div class="row" style="justify-content:space-between"><strong>Beneficio aprox. (sin IVA, sin envío del proveedor ni comisión de Stripe)</strong><strong style="color:${beneficio >= 0 ? 'var(--ok)' : 'var(--err)'}">${eur(beneficio)}</strong></div>` : ''}
+    </div>
+    ${!['cancelado', 'reembolsado'].includes(p.estado) ? `<div class="card stack">
+      <p class="small" style="margin:0">Si no puedes servir el pedido (por ejemplo, el proveedor lo ha agotado), devuelve el dinero desde Stripe y márcalo aquí.</p>
+      <button class="btn b-danger" data-est="reembolsado">Marcar como reembolsado</button>
+    </div>` : ''}`;
+
+  $('#volverPed').onclick = () => { pedidoAbierto = null; pintar(); };
+  $('#copiarDir').onclick = () => copiar(dir, 'Dirección copiada');
+  if ($('#copiarMail')) $('#copiarMail').onclick = () => copiar(p.cliente_email, 'Correo copiado');
+  document.querySelectorAll('[data-est]').forEach(b => b.onclick = async () => {
+    const nuevo = b.dataset.est;
+    if (nuevo === 'reembolsado' && !confirm('¿Has devuelto ya el dinero en Stripe? El pedido quedará como reembolsado.')) return;
+    const cambios = { ref_proveedor: $('#refProv').value.trim() || null, transportista: $('#transp').value.trim() || null, seguimiento: $('#seguim').value.trim() || null, notas: $('#notasPed').value.trim() || null };
+    if (nuevo) cambios.estado = nuevo;
+    if (nuevo === 'enviado' && !cambios.seguimiento && !confirm('No has puesto número de seguimiento. ¿Marcar como enviado igualmente?')) return;
+    b.disabled = true;
+    const { error } = await sb.from('pedidos').update(cambios).eq('id', p.id);
+    if (error) { b.disabled = false; return toast('No se ha podido guardar'); }
+    Object.assign(p, cambios);
+    await cargarPedidos(); pintarPedido();
+    toast(nuevo ? 'Pedido actualizado' : 'Guardado');
+  });
+}
+
+function mailSeguimiento(p) {
+  const asunto = `Tu pedido #${p.numero} de EpicOutlet.es ya está en camino`;
+  const cuerpo = `Hola ${(p.cliente_nombre || '').split(' ')[0]},\n\n¡Tu pedido #${p.numero} ya está en camino!\n\n${p.transportista ? `Transportista: ${p.transportista}\n` : ''}${p.seguimiento ? `Número de seguimiento: ${p.seguimiento}\n` : ''}\nLo recibirás en 1 a 3 días laborables.\n\nGracias por comprar en EpicOutlet.es.\nSi tienes cualquier duda, responde a este correo.\n`;
+  return `mailto:${encodeURIComponent(p.cliente_email)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+}
+
+async function copiar(texto, msg) {
+  try { await navigator.clipboard.writeText(texto); toast(msg); }
+  catch (e) { const t = document.createElement('textarea'); t.value = texto; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); toast(msg); } catch (x) { toast('No se ha podido copiar'); } t.remove(); }
+}
+
 /* ---------- Ajustes de precio ---------- */
 function pintarAjustes() {
   const conCoste = PRODS.filter(p => nOrNull((PRIV[p.id] || {}).coste));
@@ -403,6 +559,15 @@ function pintarAjustes() {
         <p class="small" style="margin:0">Déjalo vacío para usar el margen general.</p>
         <div class="g2">${Object.entries(CATS).map(([k, n]) => `<label class="f">${n} (%)<input class="in" name="cat_${k}" inputmode="decimal" value="${esc(AJ.cat[k] ?? '')}" placeholder="${esc(AJ.margen)}"></label>`).join('')}</div>
       </div>
+      <div class="card stack">
+        <h2 style="font-size:18px">Gastos de envío</h2>
+        <p class="small" style="margin:0">Lo que paga el cliente por el envío (IVA incluido). Ten en cuenta lo que te cobra el proveedor por enviarlo.</p>
+        <div class="g2">
+          <label class="f">Precio del envío (€)<input class="in" name="envPrecio" inputmode="decimal" value="${esc(ENV.precio ?? '')}" placeholder="Ej. 4,95"></label>
+          <label class="f">Envío gratis a partir de (€)<input class="in" name="envGratis" inputmode="decimal" value="${esc(ENV.gratisDesde ?? '')}" placeholder="Vacío = nunca gratis"></label>
+        </div>
+        ${ENV.precio == null ? '<div class="msg err">Todavía no has puesto el precio del envío: ahora mismo los clientes no pagarían envío.</div>' : ''}
+      </div>
       <div id="ajMsg"></div>
       <button class="btn b-brand" type="submit">Guardar ajustes</button>
     </form>
@@ -417,11 +582,13 @@ function pintarAjustes() {
     const f = new FormData(form);
     AJ.margen = nOrNull(f.get('margen')) ?? 0; AJ.iva = nOrNull(f.get('iva')) ?? 21; AJ.costeConIva = !!f.get('costeConIva'); AJ.usarPvp = !!f.get('usarPvp'); AJ.redondeo = f.get('redondeo');
     AJ.cat = {}; Object.keys(CATS).forEach(k => { const v = nOrNull(f.get('cat_' + k)); if (v != null) AJ.cat[k] = v; });
+    ENV = { precio: nOrNull(f.get('envPrecio')), gratisDesde: nOrNull(f.get('envGratis')) };
   };
   form.oninput = () => { leer(); $('#ejemplo').innerHTML = `Ejemplo: un producto que te cuesta 10,00 € se venderá a <strong>${eur(precioSugerido(10, '__general'))}</strong>.`; };
   form.onsubmit = async ev => {
     ev.preventDefault(); leer();
-    const ok = await guardarAjustes();
+    let ok = await guardarAjustes();
+    if (ENV.precio != null) { const { error } = await sb.from('ajustes').upsert({ clave: 'envio', valor: ENV }); if (error) ok = false; }
     $('#ajMsg').innerHTML = ok ? '<div class="msg ok">Ajustes guardados. Los próximos productos que importes ya llegarán con este margen.</div>'
       : `<div class="msg err">Guardado solo en este dispositivo. Para que valga también en el móvil y el ordenador, crea la tabla de ajustes: en Supabase → SQL Editor, ejecuta el bloque «Ajustes» de <code>supabase/schema.sql</code>.</div>`;
   };
@@ -851,7 +1018,8 @@ async function borrar() {
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
   if (LOTE && LOTE.corriendo) return toast('Espera a que termine la importación o pulsa Parar');
   if (ed && ed.importado && !ed.id && !confirm('¿Salir sin guardar este producto?')) return;
-  ed = null; vista = b.dataset.v; pintar();
+  ed = null; pedidoAbierto = null; vista = b.dataset.v;
+  if (vista === 'pedidos') cargarPedidos().then(pintar); else pintar();
 });
 $('#salir').onclick = async () => { await sb.auth.signOut(); session = null; ed = null; pintarLogin(); };
 iniciar();

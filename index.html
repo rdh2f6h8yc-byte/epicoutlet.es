@@ -716,10 +716,13 @@ function pageProduct(id) {
 }
 
 /* Carrito */
-let checkoutMsg = false, couponMsg = '';
+let checkoutMsg = '', couponMsg = '', pagando = false;
+let ENVIO = { precio: null, gratisDesde: null };
+function costeEnvio(sub) { if (ENVIO.precio == null) return null; return ENVIO.gratisDesde != null && sub >= ENVIO.gratisDesde ? 0 : ENVIO.precio; }
 function pageCart() {
   const lines = cart.map(l => ({ ...l, p: byId(l.id) })).filter(l => l.p);
   const sub = lines.reduce((a, l) => a + l.p.price * l.qty, 0);
+  const env = costeEnvio(sub);
   const old = lines.reduce((a, l) => a + (pct(l.p) > 0 ? l.p.old : l.p.price) * l.qty, 0);
   const units = lines.reduce((a, l) => a + l.qty, 0);
   return `<div class="cartpage"><div class="wrap">
@@ -741,14 +744,16 @@ function pageCart() {
       <aside class="summary" aria-label="Resumen del pedido">
         <h2 style="font-size:24px">Resumen</h2>
         <div class="row"><span>Productos (${units})</span><strong>${eur(sub)}</strong></div>
-        <div class="row"><span>Envío (1–3 días laborables)</span><strong>Al finalizar</strong></div>
-        <div class="row saving"><span>Te ahorras</span><span>${eur(old - sub)}</span></div>
-        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(sub)}</b></div>
-        <div class="note" style="margin-top:-8px">IVA incluido. El envío se calcula en el siguiente paso.</div>
+        <div class="row"><span>Envío (1–3 días laborables)</span><strong>${env == null ? 'Al pagar' : env === 0 ? 'Gratis' : eur(env)}</strong></div>
+        ${ENVIO.gratisDesde != null && env > 0 ? `<div class="note" style="margin-top:-6px">Te faltan ${eur(ENVIO.gratisDesde - sub)} para el envío gratis.</div>` : ''}
+        ${old - sub > 0.009 ? `<div class="row saving"><span>Te ahorras</span><span>${eur(old - sub)}</span></div>` : ''}
+        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(sub + (env || 0))}</b></div>
+        <div class="note" style="margin-top:-8px">IVA incluido.</div>
         <div style="display:flex;gap:8px"><label for="cupon" class="sr">Código de descuento</label><input id="cupon" class="input" style="min-height:48px;flex:1;min-width:0" placeholder="Código de descuento"><button class="btn btn-line" id="applyCoupon" style="min-height:48px;padding:0 16px;font-size:14px">Aplicar</button></div>
         ${couponMsg ? `<div class="msg" role="status">${couponMsg}</div>` : ''}
-        <button class="btn btn-brand btn-block" id="checkout" style="min-height:58px;font-size:17px">Finalizar compra</button>
-        ${checkoutMsg ? `<div class="msg" role="status">El pago todavía no está conectado. Aquí irá la pasarela (por ejemplo Stripe o Redsys).</div>` : ''}
+        <button class="btn btn-brand btn-block" id="checkout" style="min-height:58px;font-size:17px" ${pagando ? 'disabled' : ''}>${pagando ? 'Abriendo el pago seguro…' : 'Finalizar compra'}</button>
+        ${checkoutMsg ? `<div class="msg" role="status">${checkoutMsg}</div>` : ''}
+        <div class="note" style="text-align:center;margin-top:-4px">Pago seguro con Stripe. Introducirás tu dirección de envío en el siguiente paso.</div>
         <div class="pay"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Google Pay</span></div>
       </aside>
     </div>`}
@@ -853,7 +858,7 @@ const PAGES = {
     <p class="lead">Te ofrecemos varias formas de pago para que cada pedido se pague de forma sencilla, rápida y segura.</p>
     <h2>Tarjeta</h2><ul><li><strong>Visa</strong></li><li><strong>Mastercard</strong></li><li><strong>American Express</strong></li><li><strong>Maestro</strong></li></ul>
     <h2>Pago rápido</h2><ul><li><strong>Apple Pay</strong></li><li><strong>Google Pay</strong></li></ul><p>Disponibles según tu dispositivo y tu cuenta.</p>
-    <h2>Pago seguro</h2><p>Los pagos se procesan a través de una pasarela de pago segura ([PASARELA DE PAGO]) con cifrado, detección de fraude y <strong>3D Secure</strong>, que puede pedirte una verificación extra de tu banco.</p>
+    <h2>Pago seguro</h2><p>Los pagos se procesan a través de <strong>Stripe</strong>, una pasarela de pago segura, con cifrado, detección de fraude y <strong>3D Secure</strong>, que puede pedirte una verificación extra de tu banco.</p>
     <p><strong>EpicOutlet nunca te pedirá por correo o por teléfono los datos completos de tu tarjeta, contraseñas ni códigos de seguridad.</strong></p>
     <h2>Confirmación del pago</h2><p>Cuando el pago se completa, registramos tu pedido y lo preparamos. Si el pago no se autoriza o hay algún problema, el pedido no se podrá completar hasta que se resuelva.</p>
     <p>¿Dudas sobre pagos? Escríbenos a ${mail}.</p>` },
@@ -947,6 +952,48 @@ function pageAccount() {
   </div>`;
 }
 
+/* ---------- Pago ---------- */
+async function finalizarCompra() {
+  if (pagando || !cart.length) return;
+  pagando = true; checkoutMsg = ''; render(true);
+  try {
+    const r = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: cart.map(l => ({ id: l.id, qty: l.qty })) }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.url) { location.href = d.url; return; }
+    if (r.status === 409 && Array.isArray(d.problemas)) {
+      for (const pr of d.problemas) {
+        const l = cart.find(i => String(i.id) === String(pr.id));
+        if (!l) continue;
+        if (pr.stock > 0) l.qty = pr.stock; else cart = cart.filter(i => i !== l);
+        const p = byId(pr.id); if (p) p.stock = pr.stock;
+      }
+      store.set(cart); updateBadges();
+    }
+    checkoutMsg = esc(d.error || 'No se ha podido iniciar el pago. Inténtalo de nuevo.');
+  } catch (e) { checkoutMsg = 'No hay conexión. Inténtalo de nuevo.'; }
+  pagando = false; render(true);
+}
+
+function pageGracias(sesion) {
+  if (sesion && cart.length) { cart = []; store.set(cart); updateBadges(); }
+  if (sesion) {
+    fetch('/api/pedido?s=' + encodeURIComponent(sesion)).then(r => r.ok ? r.json() : null).then(p => {
+      const el = $('#numPedido'); if (p && el) el.innerHTML = `Número de pedido: <strong>#${p.numero}</strong>`;
+    }).catch(() => {});
+  }
+  return `<div class="wrap" style="padding:64px 16px 80px;max-width:640px;text-align:center">
+    <div style="width:72px;height:72px;border-radius:999px;background:var(--ok-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1D6B3A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></div>
+    <h1 style="font-size:clamp(30px,4vw,42px)">¡Gracias por tu compra!</h1>
+    <p id="numPedido" style="color:var(--ink2);font-size:17px;margin:14px 0 6px">${sesion ? 'Confirmando tu pedido…' : ''}</p>
+    <p style="color:var(--muted);line-height:1.6">Te hemos enviado el justificante de pago por correo. Recibirás tu pedido en <strong>1 a 3 días laborables</strong> y te avisaremos con el número de seguimiento cuando salga.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px">
+      <a href="#/" class="btn btn-brand">Seguir comprando</a>
+      <a href="#/info/contacto" class="btn btn-line">¿Alguna duda?</a>
+    </div>
+  </div>`;
+}
+
 function pageNotFound() {
   return `<div class="wrap" style="padding:80px 24px;text-align:center"><h1 style="font-size:40px">Página no encontrada</h1><p style="color:var(--muted)">Puede que el producto ya se haya agotado.</p><a href="#/" class="btn btn-brand">Volver al inicio</a></div>`;
 }
@@ -958,7 +1005,8 @@ let lastRoute = '';
 function render(keepScroll) {
   const h = location.hash.replace(/^#/, '') || '/';
   if (h.startsWith('estados')) return;
-  const parts = h.split('/').filter(Boolean);
+  const [ruta, consulta] = h.split('?');
+  const parts = ruta.split('/').filter(Boolean);
   let html, active = '', nav = 'home';
   clearInterval(cdTimer);
   if (!parts.length) { html = pageHome(); }
@@ -967,6 +1015,7 @@ function render(keepScroll) {
   else if (parts[0] === 'carrito') { html = pageCart(); nav = 'cart'; }
   else if (parts[0] === 'info' && PAGES[parts[1]]) { html = pageInfo(parts[1]); nav = 'info'; }
   else if (parts[0] === 'cuenta') { html = pageAccount(); nav = 'acc'; }
+  else if (parts[0] === 'gracias') { html = pageGracias(new URLSearchParams(consulta || '').get('s')); nav = 'cart'; }
   else html = pageNotFound();
   $('#app').innerHTML = html;
   renderCatnav(active);
@@ -976,8 +1025,8 @@ function render(keepScroll) {
   if (h !== lastRoute && !keepScroll) window.scrollTo(0, 0);
   if (h !== lastRoute) { checkoutMsg = false; couponMsg = ''; }
   lastRoute = h;
-  const titles = { home: 'Tu outlet de confianza', cat: active ? catTitle(active) : 'Productos', cart: 'Carrito', info: PAGES[parts[1]]?.title, acc: 'Mi cuenta' };
-  document.title = `EpicOutlet.es — ${parts[0] === 'p' && byId(decodeURIComponent(parts[1])) ? byId(decodeURIComponent(parts[1])).rawName || byId(decodeURIComponent(parts[1])).name : titles[nav]}`;
+  const titles = { gracias: '¡Gracias por tu compra!', home: 'Tu outlet de confianza', cat: active ? catTitle(active) : 'Productos', cart: 'Carrito', info: PAGES[parts[1]]?.title, acc: 'Mi cuenta' };
+  document.title = `EpicOutlet.es — ${parts[0] === 'gracias' ? titles.gracias : parts[0] === 'p' && byId(decodeURIComponent(parts[1])) ? byId(decodeURIComponent(parts[1])).rawName || byId(decodeURIComponent(parts[1])).name : titles[nav]}`;
 }
 window.addEventListener('hashchange', () => render());
 
@@ -995,7 +1044,7 @@ document.addEventListener('click', e => {
   else if (d.buynow) { addToCart(d.buynow, prodState.qty); location.hash = '#/carrito'; }
   else if (d.cq) { const l = cart.find(i => String(i.id) === d.cq); const p = byId(l.id); l.qty = Math.max(1, Math.min(p.stock, l.qty + +d.d)); store.set(cart); render(true); }
   else if (d.del) { cart = cart.filter(i => String(i.id) !== d.del); store.set(cart); render(true); }
-  else if (t.id === 'checkout') { checkoutMsg = true; render(true); }
+  else if (t.id === 'checkout') { finalizarCompra(); }
   else if (t.id === 'applyCoupon') { const v = $('#cupon').value.trim(); couponMsg = v ? `El código «${v.replace(/[<>&"]/g, '')}» no es válido o ha caducado.` : 'Escribe un código de descuento.'; render(true); }
   else if (t.id === 'toggleFilters') { const f = $('#filters'); const open = f.classList.toggle('open'); t.setAttribute('aria-expanded', open); }
   else if ('scroll' in d || 'gotoStates' in d) {
@@ -1032,7 +1081,9 @@ async function cargarProductos() {
   if (!C || !C.supabaseUrl || !C.supabaseKey) return;
   try {
     const campos = 'id,slug,nombre,categoria,estado,marca,precio,precio_anterior,stock,descripcion,caracteristicas,imagenes,top,creado';
-    const r = await fetch(`${C.supabaseUrl}/rest/v1/productos?publicado=eq.true&select=${campos}&order=creado.desc`, { headers: { apikey: C.supabaseKey } });
+    fetch(`${C.supabaseUrl}/rest/v1/ajustes?clave=eq.envio&select=valor`, { headers: { apikey: C.supabaseKey } })
+      .then(r => r.ok ? r.json() : []).then(a => { const v = (a[0] || {}).valor; if (v && v.precio != null) { ENVIO = { precio: Number(v.precio) || 0, gratisDesde: v.gratisDesde != null && v.gratisDesde !== '' ? Number(v.gratisDesde) : null }; if (/carrito/.test(location.hash)) render(true); } }).catch(() => {});
+    const r = await fetch(`${C.supabaseUrl}/rest/v1/productos?publicado=eq.true&stock=gt.0&select=${campos}&order=creado.desc`, { headers: { apikey: C.supabaseKey } });
     if (!r.ok) throw new Error(r.status);
     const rows = await r.json();
     const mes = 30 * 864e5;
