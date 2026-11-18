@@ -236,12 +236,29 @@ section.blk{padding:28px 0 48px}
 footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 .fgrid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));gap:32px}
 .fgrid h4{color:#fff;margin:0 0 12px;font-size:15px}
-.fgrid a{display:block;font-size:14px;padding:5px 0}
-.fgrid a:hover{color:#fff}
+.fgrid a,.fgrid .flink{display:block;font-size:14px;padding:5px 0}
+.fgrid a:hover,.fgrid .flink:hover{color:#fff}
 .fbot{margin-top:40px;padding-top:24px;border-top:1px solid #2E2E35;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
 .fbot .pay span{border-color:#3A3A42}
 
 /* Toast */
+.ck{position:fixed;left:16px;right:16px;bottom:16px;margin:0 auto;max-width:560px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.18);padding:20px;z-index:60;display:none}
+.ck.on{display:block}
+.ck h2{font-family:var(--head);font-size:19px;margin:0 0 8px}
+.ck p{font-size:14px;line-height:1.55;color:var(--ink2);margin:0 0 14px}
+.ck p a{text-decoration:underline}
+.ck .ckb{display:flex;gap:10px;flex-wrap:wrap}
+.ck .ckb .btn{flex:1 1 140px;min-height:46px;font-size:15px;padding:0 14px}
+.ck .ckop{display:none;border-top:1px solid var(--line);margin:4px 0 14px;padding-top:10px}
+.ck.cfg .ckop{display:block}
+.ck label{display:flex;gap:12px;align-items:flex-start;padding:10px 0;font-size:14px;line-height:1.45;color:var(--ink2)}
+.ck label strong{display:block;color:var(--ink);font-size:15px}
+.ck input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--brand);flex:none}
+.flink{background:none;border:0;padding:0;color:inherit;font-size:inherit;text-align:left}
+.ckt{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 18px}
+.ckt th,.ckt td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+.ckt th{background:var(--soft)}
+@media (max-width:760px){.ck{bottom:84px;left:10px;right:10px;padding:16px}.ckt{font-size:13px}}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:14px 22px;border-radius:14px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .3s;z-index:50;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
 .toast.show{transform:translate(-50%,0)}
 
@@ -429,7 +446,7 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
       </div>
       <div><h4>Tienda</h4><a href="/coleccion/novedades">Novedades</a><a href="/coleccion/top">Top ventas</a><a href="/coleccion/liquidaciones">Liquidaciones</a><a href="/info/historia">Nuestra historia</a></div>
       <div><h4>Ayuda</h4><a href="/info/faq">Preguntas frecuentes</a><a href="/info/envios">Envíos</a><a href="/info/devoluciones">Devoluciones</a><a href="/info/pagos">Métodos de pago</a><a href="/info/contacto">Contacto</a></div>
-      <div><h4>Legal</h4><a href="/info/aviso-legal">Aviso legal</a><a href="/info/terminos">Términos y condiciones</a><a href="/info/privacidad">Privacidad</a><a href="/info/cookies">Cookies</a></div>
+      <div><h4>Legal</h4><a href="/info/aviso-legal">Aviso legal</a><a href="/info/terminos">Términos y condiciones</a><a href="/info/privacidad">Privacidad</a><a href="/info/cookies">Cookies</a><button type="button" class="flink" onclick="abrirCookies(true)">Configurar cookies</button></div>
     </div>
     <div class="fbot">
       <span>© <span id="year"></span> EpicOutlet.es</span>
@@ -446,6 +463,20 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="ck" id="ck" role="dialog" aria-labelledby="ckTit" aria-describedby="ckTxt">
+  <h2 id="ckTit">Tu privacidad</h2>
+  <p id="ckTxt">Usamos cookies propias necesarias para que la tienda funcione y, si nos dejas, cookies de análisis de Google Analytics para saber cómo se usa la web y mejorarla. Puedes aceptarlas, rechazarlas o elegir. Más información en la <a href="/info/cookies">política de cookies</a>.</p>
+  <div class="ckop">
+    <label><input type="checkbox" checked disabled><span><strong>Necesarias</strong>Carrito, pago y funcionamiento básico. Siempre activas.</span></label>
+    <label><input type="checkbox" id="ckA"><span><strong>Análisis</strong>Estadísticas anónimas de visitas con Google Analytics.</span></label>
+  </div>
+  <div class="ckb">
+    <button type="button" class="btn btn-line" onclick="guardarCookies(false)">Rechazar</button>
+    <button type="button" class="btn btn-line" id="ckCfg" onclick="configurarCookies()">Configurar</button>
+    <button type="button" class="btn btn-brand" onclick="guardarCookies(true)">Aceptar</button>
+  </div>
+</div>
 
 <script src="/config.js"></script>
 <script>
@@ -548,6 +579,7 @@ function addToCart(id, qty = 1) {
   const p = byId(id); if (!p) return; const line = cart.find(i => String(i.id) === String(id));
   if (line) line.qty = Math.min(p.stock, line.qty + qty); else cart.push({ id, qty: Math.min(p.stock, qty) });
   store.set(cart); updateBadges();
+  evento('add_to_cart', { currency: 'EUR', value: +(p.price * qty).toFixed(2), items: [itemGA(p, qty)] });
   toast(`Añadido: ${p.name}`);
 }
 let tt;
@@ -1012,12 +1044,16 @@ const PAGES = {
   cookies: { title: 'Política de cookies', html: `
     <p class="lead">EpicOutlet usa cookies y tecnologías parecidas para que la tienda funcione bien, recordar algunas preferencias y, si corresponde, entender cómo se usa el sitio.</p>
     <h2>1. ¿Qué son las cookies?</h2><p>Son pequeños archivos que se guardan en tu dispositivo al visitar un sitio web. Permiten que el sitio reconozca tu dispositivo y recuerde cierta información de tu visita.</p>
-    <h2>2. ¿Qué tipos podemos usar?</h2>
-    <p><strong>Necesarias:</strong> imprescindibles para que la tienda funcione, por ejemplo para guardar tu carrito, procesar pedidos y navegar por el sitio.</p>
-    <p><strong>De preferencias:</strong> recuerdan algunas de tus preferencias para facilitarte el uso de la tienda.</p>
-    <p><strong>De análisis:</strong> si las usamos, nos ayudan a entender cómo se usa el sitio para mejorarlo.</p>
-    <p><strong>De marketing:</strong> si las usamos, y solo con tu consentimiento, sirven para medir y personalizar la publicidad.</p>
-    <h2>3. Cómo gestionarlas</h2><p>Puedes aceptar, rechazar o gestionar las cookies que no son necesarias. Las estrictamente necesarias no se pueden desactivar porque sin ellas la tienda no funciona. También puedes borrarlas o bloquearlas desde la configuración de tu navegador.</p>
+    <h2>2. Cookies que usamos</h2>
+    <table class="ckt"><thead><tr><th>Nombre</th><th>Tipo</th><th>Para qué sirve</th><th>Duración</th></tr></thead><tbody>
+      <tr><td>eo_cart</td><td>Necesaria (propia)</td><td>Guarda los productos de tu carrito</td><td>Hasta que lo vacíes</td></tr>
+      <tr><td>eo_cookies</td><td>Necesaria (propia)</td><td>Recuerda lo que has elegido sobre las cookies</td><td>Hasta que la borres</td></tr>
+      <tr><td>Cookies de Stripe</td><td>Necesaria (tercero)</td><td>Procesar el pago de forma segura y prevenir el fraude</td><td>Según Stripe</td></tr>
+      <tr><td>_ga</td><td>Análisis (Google)</td><td>Distinguir visitantes de forma anónima para las estadísticas</td><td>2 años</td></tr>
+      <tr><td>_ga_&lt;ID&gt;</td><td>Análisis (Google)</td><td>Mantener el estado de la sesión de Google Analytics</td><td>2 años</td></tr>
+    </tbody></table>
+    <p>Las cookies de análisis solo se instalan si las aceptas. Google Analytics lo presta Google Ireland Ltd.; puedes consultar su información en <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener" class="link" style="font-size:inherit">policies.google.com</a>. No usamos cookies de publicidad.</p>
+    <h2>3. Cómo gestionarlas</h2><p>Puedes aceptar, rechazar o cambiar tu elección cuando quieras desde <button type="button" class="flink link" style="font-size:inherit;text-decoration:underline" onclick="abrirCookies(true)">Configurar cookies</button> (también en el pie de página). Las estrictamente necesarias no se pueden desactivar porque sin ellas la tienda no funciona. También puedes borrarlas o bloquearlas desde la configuración de tu navegador.</p>
     <h2>4. Cookies de terceros</h2><p>Algunos servicios integrados en el sitio, como la pasarela de pago o las herramientas de análisis o publicidad, pueden usar sus propias cookies, que se rigen por las políticas de esos proveedores.</p>
     <h2>5. Cambios en esta política</h2><p>Podemos actualizarla si cambian las funciones de la tienda, los servicios que usamos o la ley.</p>
     <p>Dudas sobre cookies o protección de datos: ${mail}.</p>` }
@@ -1057,6 +1093,7 @@ function pageAccount() {
 async function finalizarCompra() {
   if (pagando || !cart.length) return;
   pagando = true; checkoutMsg = ''; render(true);
+  evento('begin_checkout', { currency: 'EUR', items: cart.map(l => { const p = byId(l.id); return p ? itemGA(p, l.qty) : null; }).filter(Boolean) });
   try {
     const headers = { 'Content-Type': 'application/json' };
     if (cupon) headers.Authorization = 'Bearer ' + tokenAdmin();
@@ -1084,6 +1121,7 @@ function pageGracias(sesion) {
   if (sesion) {
     fetch('/api/pedido?s=' + encodeURIComponent(sesion)).then(r => r.ok ? r.json() : null).then(p => {
       const el = $('#numPedido'); if (p && el) el.innerHTML = `Número de pedido: <strong>#${p.numero}</strong>`;
+      if (p && p.numero && Number(p.total) > 0) evento('purchase', { transaction_id: String(p.numero), currency: 'EUR', value: Number(p.total) }, 'compra-' + p.numero);
     }).catch(() => {});
   }
   return `<div class="wrap" style="padding:64px 16px 80px;max-width:640px;text-align:center">
@@ -1101,6 +1139,70 @@ function pageGracias(sesion) {
 
 function pageNotFound() {
   return `<div class="wrap" style="padding:80px 24px;text-align:center"><h1 style="font-size:40px">Página no encontrada</h1><p style="color:var(--muted)">Puede que el producto ya se haya agotado.</p><a href="/" class="btn btn-brand">Volver al inicio</a></div>`;
+}
+
+/* ===========================================================
+   COOKIES Y GOOGLE ANALYTICS (solo se carga si el cliente acepta)
+   =========================================================== */
+const GA_ID = (typeof EO_CONFIG !== 'undefined' && EO_CONFIG.gaId) || '';
+const CK_CLAVE = 'eo_cookies';
+let gaCargado = false, ultimaVista = '';
+function leerCookies() { try { return JSON.parse(localStorage.getItem(CK_CLAVE) || 'null'); } catch (e) { return null; } }
+function cargarGA() {
+  if (gaCargado || !GA_ID) return;
+  gaCargado = true;
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { dataLayer.push(arguments); };
+  gtag('consent', 'default', { analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+  gtag('js', new Date());
+  gtag('config', GA_ID, { send_page_view: false, anonymize_ip: true });
+  const sc = document.createElement('script'); sc.async = true; sc.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+  document.head.appendChild(sc);
+  ultimaVista = ''; vistaGA();
+}
+function borrarCookiesGA() {
+  const dominios = ['', location.hostname, '.' + location.hostname.replace(/^www\./, '')];
+  document.cookie.split(';').map(c => c.split('=')[0].trim()).filter(n => /^_ga/.test(n)).forEach(n => {
+    dominios.forEach(d => { document.cookie = n + '=; Max-Age=0; path=/' + (d ? '; domain=' + d : ''); });
+  });
+}
+function analiticaOk() { const c = leerCookies(); return !!(GA_ID && c && c.a); }
+function vistaGA() {
+  if (!gaCargado || !analiticaOk()) return;
+  const url = location.pathname + location.search;
+  if (url === ultimaVista) return; ultimaVista = url;
+  gtag('event', 'page_view', { page_location: location.href, page_path: url, page_title: document.title });
+}
+function evento(nombre, datos, unaVez) {
+  if (!gaCargado || !analiticaOk()) return;
+  if (unaVez) { try { if (sessionStorage.getItem('ga_' + unaVez)) return; sessionStorage.setItem('ga_' + unaVez, '1'); } catch (e) {} }
+  gtag('event', nombre, datos || {});
+}
+function itemGA(p, qty) { return { item_id: String(p.id), item_name: p.name, item_category: (CATS[p.cat] && CATS[p.cat].name) || p.cat || '', price: p.price, quantity: qty || 1 }; }
+function abrirCookies(configurar) {
+  const ck = $('#ck'); if (!ck) return;
+  const c = leerCookies(); $('#ckA').checked = !!(c && c.a);
+  ck.classList.toggle('cfg', !!configurar);
+  $('#ckCfg').textContent = configurar ? 'Guardar selección' : 'Configurar';
+  ck.classList.add('on');
+}
+function configurarCookies() {
+  const ck = $('#ck');
+  if (ck.classList.contains('cfg')) return guardarCookies($('#ckA').checked);
+  abrirCookies(true);
+}
+function guardarCookies(analitica) {
+  try { localStorage.setItem(CK_CLAVE, JSON.stringify({ a: !!analitica, v: 1, f: new Date().toISOString() })); } catch (e) {}
+  $('#ck').classList.remove('on', 'cfg');
+  if (analitica) cargarGA();
+  else if (gaCargado) { gtag('consent', 'update', { analytics_storage: 'denied' }); borrarCookiesGA(); }
+  else borrarCookiesGA();
+}
+function iniciarCookies() {
+  if (!GA_ID) return;                      // sin Analytics no hace falta pedir permiso
+  const c = leerCookies();
+  if (!c) abrirCookies(false);
+  else if (c.a) cargarGA();
 }
 
 /* ===========================================================
@@ -1133,6 +1235,7 @@ function render(keepScroll) {
   lastRoute = h;
   prepararFlechas();
   actualizarSEO(parts, active, nav);
+  vistaGA();
 }
 window.addEventListener('popstate', () => render());
 
@@ -1254,6 +1357,7 @@ async function cargarProductos() {
 
 $('#year').textContent = new Date().getFullYear();
 if (!$('#app').innerHTML.trim()) $('#app').innerHTML = '<div class="wrap" style="padding:80px 24px;text-align:center;color:var(--muted)">Cargando productos…</div>';
+iniciarCookies();
 cargarProductos().then(() => render());
 </script>
 </body>

@@ -64,3 +64,11 @@ Cuando un cliente paga, el pedido aparece en *Panel → Pedidos* con el enlace p
 - Logo, favicon e iconos en `img/` y `favicon.ico`; `site.webmanifest` para guardar la tienda en el móvil.
 
 ## Pendiente
+
+## Google Analytics y cookies
+
+1. En https://analytics.google.com crea una propiedad GA4 para `https://www.epicoutlet.es` (flujo de datos web) y copia el **ID de medición** (`G-XXXXXXXXXX`).
+2. Ponlo en `config.js` → `gaId: 'G-XXXXXXXXXX'` y sube el cambio.
+3. Con `gaId` relleno aparece el aviso de cookies (Aceptar / Rechazar / Configurar). Analytics **solo se carga si el cliente acepta** (normativa de la AEPD). El cliente puede cambiar su elección en «Configurar cookies» del pie de página.
+4. Se envían: vistas de página (también al navegar sin recargar), `add_to_cart`, `begin_checkout` y `purchase` (con el número y el total del pedido; los pedidos de prueba a 0 € no se cuentan).
+5. En Analytics → Administrar → Retención de datos, pon 14 meses; y en Eventos clave marca `purchase`.
