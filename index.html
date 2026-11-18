@@ -266,6 +266,19 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 .thumbs button{overflow:hidden}
 .thumbs button img{padding:6px}
 .feat .ph img{border-radius:24px}
+/* Filas deslizables con flechas */
+.desliza{position:relative;min-width:0;max-width:100%}
+.desliza .fl{position:absolute;top:0;bottom:0;width:56px;display:none;align-items:center;border:0;padding:0;margin:0;cursor:pointer;z-index:3;background:none}
+.desliza .fl.der{right:0;justify-content:flex-end;background:linear-gradient(90deg,rgba(255,255,255,0),#fff 60%)}
+.desliza .fl.izq{left:0;justify-content:flex-start;background:linear-gradient(270deg,rgba(255,255,255,0),#fff 60%)}
+.desliza.hay-der .fl.der,.desliza.hay-izq .fl.izq{display:flex}
+.desliza .fl span{width:32px;height:32px;border-radius:999px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;padding-bottom:3px;box-shadow:0 4px 12px rgba(22,22,26,.25)}
+.desliza .fl:hover span{background:#2B2B31}
+.desliza .cats{padding-bottom:12px}
+.desliza .fl{bottom:12px}
+.shead .desliza .fl{bottom:4px}
+@keyframes empuja{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+.desliza.hay-der:not(.tocado) .fl.der span{animation:empuja 1.2s ease-in-out 3}
 /* Navegación inferior móvil */
 .bnav{display:none}
 
@@ -296,7 +309,8 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
   .trust{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .trust div{padding:14px;flex-direction:column;align-items:flex-start;gap:8px}
   .shead h2{font-size:28px}
-  .shead .chips{flex-wrap:nowrap;overflow-x:auto;width:calc(100% + 32px);margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+  .shead{flex-direction:column;align-items:stretch}
+  .shead .chips{flex-wrap:nowrap;overflow-x:auto;padding:0 0 4px;scrollbar-width:none}
   .shead .chips::-webkit-scrollbar{display:none}
   .shead .chip{flex:0 0 auto;min-height:40px;padding:0 14px}
   .catgrid{gap:10px}
@@ -379,7 +393,7 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
         </a>
       </div>
     </div>
-    <nav class="cats" id="catnav" aria-label="Categorías"></nav>
+    <div class="desliza"><nav class="cats desliza-c" id="catnav" aria-label="Categorías"></nav><button type="button" class="fl izq" aria-label="Ver anteriores" tabindex="-1"><span>‹</span></button><button type="button" class="fl der" aria-label="Ver más" tabindex="-1"><span>›</span></button></div>
   </div>
 </header>
 
@@ -538,6 +552,25 @@ function card(p) {
 }
 
 /* Menú de categorías */
+/* Flechas en las filas que no caben en pantalla */
+function prepararFlechas() {
+  document.querySelectorAll('.desliza').forEach(w => {
+    const c = w.querySelector('.desliza-c'); if (!c) return;
+    const act = () => {
+      w.classList.toggle('hay-izq', c.scrollLeft > 4);
+      w.classList.toggle('hay-der', c.scrollLeft + c.clientWidth < c.scrollWidth - 4);
+    };
+    if (!w._listo) {
+      c.addEventListener('scroll', () => { w.classList.add('tocado'); act(); }, { passive: true });
+      w.querySelector('.fl.der').onclick = () => c.scrollBy({ left: c.clientWidth * 0.7, behavior: 'smooth' });
+      w.querySelector('.fl.izq').onclick = () => c.scrollBy({ left: -c.clientWidth * 0.7, behavior: 'smooth' });
+      w._listo = true;
+    }
+    act();
+  });
+}
+window.addEventListener('resize', () => prepararFlechas());
+
 function renderCatnav(active) {
   const links = [['novedades', 'Novedades'], ['top', 'Top ventas'], ['liquidaciones', 'Liquidaciones', 'hot'],
     ...catsVisibles().map(([k, v]) => [k, v.name])];
@@ -562,9 +595,9 @@ function pageHome() {
     <section class="blk" style="padding-top:24px;padding-bottom:28px">
       <div class="shead">
         <div><h2>${hayTop ? 'Top ventas' : 'Últimas novedades'}</h2><p>${hayTop ? 'Lo que más se está llevando la gente.' : 'Lo último que ha llegado a la tienda.'}</p></div>
-        <div class="chips" role="group" aria-label="Filtrar productos">
+        <div class="desliza"><div class="chips desliza-c" role="group" aria-label="Filtrar productos">
           ${filters.map(([k, n]) => `<button class="chip ${homeFilter === k ? 'on' : ''}" data-hf="${k}" aria-pressed="${homeFilter === k}">${n}</button>`).join('')}
-        </div>
+        </div><button type="button" class="fl izq" aria-label="Ver anteriores" tabindex="-1"><span>‹</span></button><button type="button" class="fl der" aria-label="Ver más" tabindex="-1"><span>›</span></button></div>
       </div>
       <div class="grid">${tops.length ? tops.map(card).join('') : '<div class="empty" style="grid-column:1/-1">Pronto habrá productos en esta categoría.</div>'}</div>
     </section>
@@ -1077,6 +1110,7 @@ function render(keepScroll) {
   if (h !== lastRoute && !keepScroll) window.scrollTo(0, 0);
   if (h !== lastRoute) { checkoutMsg = false; couponMsg = ''; }
   lastRoute = h;
+  prepararFlechas();
   const titles = { gracias: '¡Gracias por tu compra!', home: 'Tu outlet de confianza', cat: active ? catTitle(active) : 'Productos', cart: 'Carrito', info: PAGES[parts[1]]?.title, acc: 'Mi cuenta' };
   document.title = `EpicOutlet.es — ${parts[0] === 'gracias' ? titles.gracias : parts[0] === 'p' && byId(decodeURIComponent(parts[1])) ? byId(decodeURIComponent(parts[1])).rawName || byId(decodeURIComponent(parts[1])).name : titles[nav]}`;
 }
