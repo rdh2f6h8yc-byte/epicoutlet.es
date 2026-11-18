@@ -296,6 +296,9 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
   .trust{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .trust div{padding:14px;flex-direction:column;align-items:flex-start;gap:8px}
   .shead h2{font-size:28px}
+  .shead .chips{flex-wrap:nowrap;overflow-x:auto;width:calc(100% + 32px);margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
+  .shead .chips::-webkit-scrollbar{display:none}
+  .shead .chip{flex:0 0 auto;min-height:40px;padding:0 14px}
   .catgrid{gap:10px}
   .cat{padding:14px 4px;font-size:12px;gap:8px}
   .cat svg{width:30px;height:30px}
@@ -556,6 +559,15 @@ function pageHome() {
   const tops = base.filter(p => homeFilter === 'todo' || p.cat === homeFilter);
   return `
   <div class="wrap">
+    <section class="blk" style="padding-top:24px;padding-bottom:28px">
+      <div class="shead">
+        <div><h2>${hayTop ? 'Top ventas' : 'Últimas novedades'}</h2><p>${hayTop ? 'Lo que más se está llevando la gente.' : 'Lo último que ha llegado a la tienda.'}</p></div>
+        <div class="chips" role="group" aria-label="Filtrar productos">
+          ${filters.map(([k, n]) => `<button class="chip ${homeFilter === k ? 'on' : ''}" data-hf="${k}" aria-pressed="${homeFilter === k}">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="grid">${tops.length ? tops.map(card).join('') : '<div class="empty" style="grid-column:1/-1">Pronto habrá productos en esta categoría.</div>'}</div>
+    </section>
     <section class="hero">
       <div class="hero-main">
         <span class="pill">Tu outlet de confianza</span>
@@ -598,15 +610,6 @@ function pageHome() {
       </div>
     </section>
 
-    <section class="blk">
-      <div class="shead">
-        <div><h2>${hayTop ? 'Top ventas' : 'Últimas novedades'}</h2><p>${hayTop ? 'Lo que más se está llevando la gente.' : 'Lo último que ha llegado a la tienda.'}</p></div>
-        <div class="chips" role="group" aria-label="Filtrar productos">
-          ${filters.map(([k, n]) => `<button class="chip ${homeFilter === k ? 'on' : ''}" data-hf="${k}" aria-pressed="${homeFilter === k}">${n}</button>`).join('')}
-        </div>
-      </div>
-      <div class="grid">${tops.length ? tops.map(card).join('') : '<div class="empty" style="grid-column:1/-1">Pronto habrá productos en esta categoría.</div>'}</div>
-    </section>
   </div>
 
   <section class="states" id="estados">
