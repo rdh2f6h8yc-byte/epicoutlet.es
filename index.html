@@ -453,8 +453,14 @@ const pct = p => p.old && p.old > p.price ? Math.round((1 - p.price / p.old) * 1
 const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const offTag = (p, st = '') => pct(p) > 0 ? `<span class="off" ${st}>−${pct(p)} %</span>` : '';
 const oldTag = p => pct(p) > 0 ? `<s>${eur(p.old)}</s>` : '';
+/* Arregla letras rotas que vienen mal de algunos proveedores (ratĂłn → ratón, Ã© → é) */
+const ROTAS = [['Ăˇ','á'],['Ă©','é'],['Ă­','í'],['Ăł','ó'],['Ăş','ú'],['Ăą','ñ'],['ĂĽ','ü'],['Ă‰','É'],['Ă“','Ó'],['Ă‘','Ñ'],['ĂŤ','Í'],['Ăš','Ú'],['Ă€','À'],
+  ['Âż','¿'],['Âˇ','¡'],['Âş','º'],['ÂŞ','ª'],['Â°','°'],['â‚¬','€'],['â€“','–'],['â€”','—'],['â€ś','“'],['â€ť','”'],['â€™','’'],['â€˘','•'],
+  ['Ã¡','á'],['Ã©','é'],['Ã­','í'],['Ã³','ó'],['Ãº','ú'],['Ã±','ñ'],['Ã¼','ü'],['Ã‰','É'],['Ã“','Ó'],['Ã‘','Ñ'],['Ãš','Ú'],['Â¿','¿'],['Â¡','¡'],['Âº','º'],['Âª','ª'],['â‚¬','€'],['â€¢','•'],['â€œ','“'],['â€','”']];
+const arreglar = t => { t = String(t == null ? '' : t); if (!/[ĂÃÂâ]/.test(t)) return t; for (const [a, b] of ROTAS) t = t.split(a).join(b); return t; };
 /* Foto del producto, o dibujo de la categoría si aún no tiene */
 const media = (p, size, sw, i = 0) => p.images && p.images[i] ? `<img src="${p.images[i]}" alt="${p.name}" loading="lazy" decoding="async">` : icon(CATS[p.cat].icon, size, sw);
+const quedan = n => n <= 0 ? 'Agotado' : n === 1 ? 'Última unidad' : `Solo quedan ${n}`;
 const phBg = p => p.images && p.images.length ? '#fff' : CATS[p.cat].bg;
 const icon = (d, size = 24, sw = 1.3) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 const byId = id => PRODUCTS.find(p => String(p.id) === String(id));
@@ -490,7 +496,7 @@ function card(p) {
     <div class="cbody">
       <a href="#/p/${p.id}" class="cname">${p.name}</a>
       <div class="price"><b>${eur(p.price)}</b>${oldTag(p)}</div>
-      ${p.stock <= 3 ? `<div class="low">Solo quedan ${p.stock}</div>` : pct(p) > 0 ? `<div class="save">Ahorras ${eur(p.old - p.price)}</div>` : ''}
+      ${p.stock <= 3 ? `<div class="low">${quedan(p.stock)}</div>` : pct(p) > 0 ? `<div class="save">Ahorras ${eur(p.old - p.price)}</div>` : ''}
       <button class="btn btn-dark" data-add="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir</button>
     </div></article>`;
 }
@@ -512,7 +518,8 @@ const dropTarget = Date.now() + ((1 * 24 + 20) * 60 + 12) * 60000; // [FECHA DEL
 function pageHome() {
   const f = PRODUCTS.find(p => p.top && pct(p) > 0) || PRODUCTS[0];
   const filters = [['todo', 'Todo'], ['relojes', 'Relojes'], ['hogar', 'Hogar'], ['bebe', 'Bebé'], ['mascotas', 'Mascotas'], ['deporte', 'Deporte']];
-  const base = PRODUCTS.some(p => p.top) ? PRODUCTS.filter(p => p.top) : PRODUCTS.slice(0, 12);
+  const hayTop = PRODUCTS.some(p => p.top);
+  const base = hayTop ? PRODUCTS.filter(p => p.top) : PRODUCTS.slice(0, 12);
   const tops = base.filter(p => homeFilter === 'todo' || p.cat === homeFilter);
   return `
   <div class="wrap">
@@ -560,8 +567,8 @@ function pageHome() {
 
     <section class="blk">
       <div class="shead">
-        <div><h2>Top ventas</h2><p>Lo que más se está llevando la gente esta semana.</p></div>
-        <div class="chips" role="group" aria-label="Filtrar top ventas">
+        <div><h2>${hayTop ? 'Top ventas' : 'Últimas novedades'}</h2><p>${hayTop ? 'Lo que más se está llevando la gente.' : 'Lo último que ha llegado a la tienda.'}</p></div>
+        <div class="chips" role="group" aria-label="Filtrar productos">
           ${filters.map(([k, n]) => `<button class="chip ${homeFilter === k ? 'on' : ''}" data-hf="${k}" aria-pressed="${homeFilter === k}">${n}</button>`).join('')}
         </div>
       </div>
@@ -675,10 +682,10 @@ function pageProduct(id) {
         <div class="thumbs">${views.map((v, i) => `<button data-view="${i}" class="${i === prodState.view ? 'on' : ''}" style="background:${v[1]}" aria-label="Ver ${v[0]}">${media(p, 40, 1.4, i)}</button>`).join('')}</div>
       </div>
       <div class="pinfo">
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="cond ${cd.cls}">${p.cond} · ${cd.title}</span>${p.stock <= 3 ? `<span class="cond c-liq">Solo quedan ${p.stock}</span>` : ''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="cond ${cd.cls}">${p.cond} · ${cd.title}</span>${p.stock <= 3 ? `<span class="cond c-liq">${quedan(p.stock)}</span>` : ''}</div>
         <h1>${p.name}</h1>
         <div class="price pprice"><b>${eur(p.price)}</b>${oldTag(p)}${pct(p) > 0 ? `<span class="save" style="font-size:15px">Ahorras ${eur(p.old - p.price)}</span>` : ''}</div>
-        <div class="note">IVA incluido.${pct(p) > 0 ? ' Precio de referencia: PVP recomendado del fabricante.' : ''}</div>
+        <div class="note">IVA incluido.${pct(p) > 0 ? ' El precio tachado es el PVP de referencia del producto.' : ''}</div>
         ${p.brand ? `<div class="note" style="margin-top:-14px">Marca: <strong style="color:var(--ink)">${p.brand}</strong></div>` : ''}
         <div class="buy">
           <div class="qty" role="group" aria-label="Cantidad">
@@ -1031,18 +1038,18 @@ async function cargarProductos() {
     const mes = 30 * 864e5;
     PRODUCTS = rows.map(x => ({
       id: x.slug,
-      rawName: x.nombre,
-      name: esc(x.nombre),
+      rawName: arreglar(x.nombre),
+      name: esc(arreglar(x.nombre)),
       cat: CATS[x.categoria] ? x.categoria : 'hogar',
       cond: CONDS[x.estado] ? x.estado : 'Nuevo',
-      brand: x.marca ? esc(x.marca) : '',
+      brand: x.marca ? esc(arreglar(x.marca)) : '',
       price: Number(x.precio),
       old: x.precio_anterior != null ? Number(x.precio_anterior) : null,
       stock: x.stock,
       top: x.top,
       isNew: Date.now() - new Date(x.creado).getTime() < mes,
-      desc: esc(x.descripcion || '').replace(/\n/g, '<br>') || 'Sin descripción.',
-      specs: Object.fromEntries(Object.entries(x.caracteristicas || {}).map(([k, v]) => [esc(k), esc(v)])),
+      desc: esc(arreglar(x.descripcion || '')).replace(/\n/g, '<br>') || 'Sin descripción.',
+      specs: Object.fromEntries(Object.entries(x.caracteristicas || {}).map(([k, v]) => [esc(arreglar(k)), esc(arreglar(v))])),
       images: (x.imagenes || []).filter(u => /^https:\/\//.test(u)).map(esc)
     }));
   } catch (e) {

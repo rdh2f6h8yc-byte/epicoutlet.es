@@ -29,7 +29,12 @@ function urlSegura(u) {
   } catch (e) { return null; }
 }
 
-const limpio = t => String(t == null ? '' : t)
+/* Arregla letras rotas que vienen mal de algunos proveedores (ratĂłn → ratón, Ã© → é) */
+const ROTAS = [['Ăˇ','á'],['Ă©','é'],['Ă­','í'],['Ăł','ó'],['Ăş','ú'],['Ăą','ñ'],['ĂĽ','ü'],['Ă‰','É'],['Ă“','Ó'],['Ă‘','Ñ'],['ĂŤ','Í'],['Ăš','Ú'],['Ă€','À'],
+  ['Âż','¿'],['Âˇ','¡'],['Âş','º'],['ÂŞ','ª'],['Â°','°'],['â‚¬','€'],['â€“','–'],['â€”','—'],['â€ś','“'],['â€ť','”'],['â€™','’'],['â€˘','•'],
+  ['Ã¡','á'],['Ã©','é'],['Ã­','í'],['Ã³','ó'],['Ãº','ú'],['Ã±','ñ'],['Ã¼','ü'],['Ã‰','É'],['Ã“','Ó'],['Ã‘','Ñ'],['Ãš','Ú'],['Â¿','¿'],['Â¡','¡'],['Âº','º'],['Âª','ª'],['â‚¬','€'],['â€¢','•'],['â€œ','“'],['â€','”']];
+const arreglar = t => { t = String(t == null ? '' : t); if (!/[ĂÃÂâ]/.test(t)) return t; for (const [a, b] of ROTAS) t = t.split(a).join(b); return t; };
+const limpio = t => arreglar(t)
   .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]*>/g, ' ')
   .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&quot;/gi, '"').replace(/&#0?39;|&apos;/gi, "'")
   .replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&euro;/gi, '€')
