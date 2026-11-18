@@ -229,7 +229,7 @@ section.blk{padding:28px 0 48px}
 .total{border-top:1px solid var(--line);padding-top:16px;align-items:baseline}
 .total b{font-size:30px;letter-spacing:-.02em}
 .pay{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;font-size:12px}
-.pay span{border:1px solid #D6D6DB;border-radius:6px;padding:3px 8px}
+.pay .pm{width:46px;height:30px;display:block;flex:none}
 .msg{background:var(--brand-soft);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--ink2)}
 
 /* Pie */
@@ -239,7 +239,7 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 .fgrid a,.fgrid .flink{display:block;font-size:14px;padding:5px 0}
 .fgrid a:hover,.fgrid .flink:hover{color:#fff}
 .fbot{margin-top:40px;padding-top:24px;border-top:1px solid #2E2E35;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:13px}
-.fbot .pay span{border-color:#3A3A42}
+.fbot .pay .pm rect{stroke:transparent}
 
 /* Toast */
 .ck{position:fixed;left:16px;right:16px;bottom:16px;margin:0 auto;max-width:560px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.18);padding:20px;z-index:60;display:none}
@@ -453,7 +453,7 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
     </div>
     <div class="fbot">
       <span>© <span id="year"></span> EpicOutlet.es</span>
-      <span class="pay"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Google Pay</span></span>
+      <span class="pay"><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Visa"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><text x="23" y="19.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="900" font-style="italic" fill="#1A1F71" letter-spacing=".3">VISA</text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Mastercard"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><circle cx="19" cy="15" r="8" fill="#EB001B"/><circle cx="27" cy="15" r="8" fill="#F79E1B"/><path d="M23 8.07A8 8 0 0 1 23 21.93A8 8 0 0 1 23 8.07Z" fill="#FF5F00"/></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="American Express"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#2E77BC" stroke="#D9D9DE"/><text x="23" y="18.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9.5" font-weight="900" fill="#fff" letter-spacing=".4">AMEX</text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Apple Pay"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><text x="23" y="18.4" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.6" font-weight="700" fill="#000">Apple Pay</text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Google Pay"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><text x="23" y="19" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="700"><tspan fill="#4285F4">G</tspan><tspan fill="#5F6368" font-weight="600"> Pay</tspan></text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Klarna"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#FFB3C7" stroke="#D9D9DE"/><text x="23" y="18.8" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="800" fill="#0B051D">Klarna.</text></svg></span>
     </div>
   </div>
 </footer>
@@ -893,7 +893,7 @@ function pageCart() {
         <button class="btn btn-brand btn-block" id="checkout" style="min-height:58px;font-size:17px" ${pagando ? 'disabled' : ''}>${pagando ? 'Abriendo el pago seguro…' : 'Finalizar compra'}</button>
         ${checkoutMsg ? `<div class="msg" role="status">${checkoutMsg}</div>` : ''}
         <div class="note" style="text-align:center;margin-top:-4px">Pago seguro con Stripe. Introducirás tu dirección de envío en el siguiente paso.</div>
-        <div class="pay"><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Apple Pay</span><span>Google Pay</span></div>
+        <div class="pay" aria-label="Formas de pago"><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Visa"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><text x="23" y="19.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="900" font-style="italic" fill="#1A1F71" letter-spacing=".3">VISA</text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Mastercard"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><circle cx="19" cy="15" r="8" fill="#EB001B"/><circle cx="27" cy="15" r="8" fill="#F79E1B"/><path d="M23 8.07A8 8 0 0 1 23 21.93A8 8 0 0 1 23 8.07Z" fill="#FF5F00"/></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="American Express"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#2E77BC" stroke="#D9D9DE"/><text x="23" y="18.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9.5" font-weight="900" fill="#fff" letter-spacing=".4">AMEX</text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Apple Pay"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><text x="23" y="18.4" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="8.6" font-weight="700" fill="#000">Apple Pay</text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Google Pay"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#fff" stroke="#D9D9DE"/><text x="23" y="19" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="700"><tspan fill="#4285F4">G</tspan><tspan fill="#5F6368" font-weight="600"> Pay</tspan></text></svg><svg class="pm" viewBox="0 0 46 30" role="img" aria-label="Klarna"><rect x=".5" y=".5" width="45" height="29" rx="5" fill="#FFB3C7" stroke="#D9D9DE"/><text x="23" y="18.8" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="800" fill="#0B051D">Klarna.</text></svg></div>
       </aside>
     </div>`}
   </div></div>`;
@@ -964,7 +964,7 @@ const PAGES = {
     <details><summary>¿Cuánto tarda en llegar mi pedido?</summary><p>La entrega tarda <strong>de 1 a 3 días laborables</strong> en toda España. Más detalles en la <a href="/info/envios" class="link" style="font-size:inherit">política de envíos</a>.</p></details>
     <details><summary>¿Cómo puedo seguir mi pedido?</summary><p>Cuando enviemos tu pedido recibirás los datos de seguimiento del paquete, si la empresa de mensajería lo permite, para que veas en qué punto está hasta que te llegue.</p></details>
     <details><summary>¿Puedo devolver un producto?</summary><p>Sí, tienes <strong>14 días</strong> desde que lo recibes, sin tener que dar explicaciones. Consulta la <a href="/info/devoluciones" class="link" style="font-size:inherit">política de devoluciones</a>.</p></details>
-    <details><summary>¿Qué formas de pago aceptáis?</summary><p>Tarjeta (Visa, Mastercard, American Express, Maestro), Apple Pay y Google Pay. Más información en <a href="/info/pagos" class="link" style="font-size:inherit">métodos de pago</a>.</p></details>` },
+    <details><summary>¿Qué formas de pago aceptáis?</summary><p>Tarjeta (Visa, Mastercard, American Express, Maestro), Apple Pay, Google Pay y Klarna (paga en 3 plazos o más tarde). Más información en <a href="/info/pagos" class="link" style="font-size:inherit">métodos de pago</a>.</p></details>` },
 
   envios: { title: 'Política de envíos', html: `
     <p class="lead">Queremos que tu pedido llegue lo antes posible y en perfecto estado.</p>
@@ -997,6 +997,7 @@ const PAGES = {
     <p class="lead">Te ofrecemos varias formas de pago para que cada pedido se pague de forma sencilla, rápida y segura.</p>
     <h2>Tarjeta</h2><ul><li><strong>Visa</strong></li><li><strong>Mastercard</strong></li><li><strong>American Express</strong></li><li><strong>Maestro</strong></li></ul>
     <h2>Pago rápido</h2><ul><li><strong>Apple Pay</strong></li><li><strong>Google Pay</strong></li></ul><p>Disponibles según tu dispositivo y tu cuenta.</p>
+    <h2>Paga en plazos con Klarna</h2><p>Con <strong>Klarna</strong> puedes pagar en 3 plazos sin intereses o más tarde. Lo eliges en la pantalla de pago y Klarna te indica las condiciones antes de confirmar. La aprobación depende de Klarna.</p>
     <h2>Pago seguro</h2><p>Los pagos se procesan a través de <strong>Stripe</strong>, una pasarela de pago segura, con cifrado, detección de fraude y <strong>3D Secure</strong>, que puede pedirte una verificación extra de tu banco.</p>
     <p><strong>EpicOutlet nunca te pedirá por correo o por teléfono los datos completos de tu tarjeta, contraseñas ni códigos de seguridad.</strong></p>
     <h2>Confirmación del pago</h2><p>Cuando el pago se completa, registramos tu pedido y lo preparamos. Si el pago no se autoriza o hay algún problema, el pedido no se podrá completar hasta que se resuelva.</p>

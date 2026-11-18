@@ -17,7 +17,7 @@ const INFO = {
   faq: ['Preguntas frecuentes', 'Respuestas sobre el estado de los productos, envíos en 1–3 días, devoluciones en 14 días y formas de pago.'],
   envios: ['Política de envíos', 'Enviamos a toda España con entrega en 1 a 3 días laborables. Consulta precios, seguimiento y qué hacer si el paquete llega dañado.'],
   devoluciones: ['Política de devoluciones', 'Tienes 14 días para devolver tu compra. Te explicamos cómo hacerlo, quién paga el envío y cómo es el reembolso.'],
-  pagos: ['Métodos de pago', 'Paga con tarjeta Visa, Mastercard, American Express o Maestro, Apple Pay o Google Pay, con pago seguro 3D Secure.'],
+  pagos: ['Métodos de pago', 'Paga con tarjeta Visa, Mastercard, American Express o Maestro, Apple Pay, Google Pay o Klarna a plazos, con pago seguro 3D Secure.'],
   'aviso-legal': ['Aviso legal', 'Datos del titular de EpicOutlet.es y condiciones de uso del sitio web.'],
   terminos: ['Términos y condiciones', 'Condiciones de compra en EpicOutlet.es: productos, precios, pedidos, pago, envío, devoluciones y garantía.'],
   privacidad: ['Política de privacidad', 'Cómo tratamos tus datos personales en EpicOutlet.es y cómo ejercer tus derechos.'],
