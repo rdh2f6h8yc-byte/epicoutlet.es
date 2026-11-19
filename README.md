@@ -75,4 +75,8 @@ Cuando un cliente paga, el pedido aparece en *Panel → Pedidos* con el enlace p
 
 ## Avisos de pedidos en el iPhone
 
-Panel → Ajustes → «Avisos de pedidos en el iPhone»: crea un canal privado, suscríbete a él en la app gratuita **ntfy** y prueba. Cada pedido pagado (webhook de Stripe) manda una notificación con número, importe, productos y cliente; al tocarla se abre el pedido en /admin. El canal se guarda en `ajustes` (clave `avisos`), que solo lee el administrador.
+Notificaciones push propias (Web Push con VAPID, sin servicios externos):
+1. En el iPhone, abre /admin en Safari → Compartir → Añadir a pantalla de inicio, y ábrelo desde el icono «EpicOutlet».
+2. Ajustes → «Avisos de pedidos nuevos» → Activar notificaciones → Enviar aviso de prueba.
+
+Las claves VAPID se generan en el panel la primera vez y, junto con los dispositivos suscritos, se guardan en `ajustes` (clave `avisos`), que solo lee el administrador. El webhook de Stripe avisa de cada pedido pagado (`api/_avisos.js`); al tocar la notificación se abre el pedido. Service worker: `/sw-admin.js` (alcance `/admin`), manifiesto: `/admin.webmanifest`.

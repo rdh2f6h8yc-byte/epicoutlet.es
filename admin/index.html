@@ -9,6 +9,11 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<link rel="manifest" href="/admin.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EpicOutlet">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -203,6 +208,13 @@ let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null
   }
 })();
 
+/* Al tocar una notificación con el panel ya abierto */
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
+  const d = e.data || {}; if (d.tipo !== 'abrir') return;
+  const h = new URL(d.url, location.href).hash;
+  if (h.startsWith('#pedido=')) { cargarPedidos().then(() => { vista = 'pedidos'; pedidoAbierto = h.slice(8); pintar(); window.scrollTo(0, 0); }); }
+});
+
 /* ---------- Arranque ---------- */
 async function iniciar() {
   if (!CFG.supabaseUrl || !CFG.supabaseKey || !window.supabase) {
@@ -240,6 +252,7 @@ async function entrar() {
   const { data: ok, error } = await sb.rpc('es_admin');
   if (error || ok !== true) { await sb.auth.signOut(); return pintarLogin('Este usuario no tiene permiso de administrador. Añade su correo a la tabla «admins» en Supabase.'); }
   $('#tabs').hidden = false; $('#salir').hidden = false;
+  swPanel();
   await Promise.all([cargar(), cargarAjustes(), cargarPedidos()]);
   if (PEDIDOS.some(p => p.estado === 'pagado')) vista = 'pedidos';
   const pend = sessionStorage.getItem('eo_pend'), err = sessionStorage.getItem('eo_err'), lista = sessionStorage.getItem('eo_lista'), pedAv = sessionStorage.getItem('eo_pedido');
@@ -574,60 +587,113 @@ async function copiar(texto, msg) {
 }
 
 /* ---------- Ajustes de precio ---------- */
-function nuevoCanal() {
-  const a = new Uint8Array(15); crypto.getRandomValues(a);
-  return 'epicoutlet-' + Array.from(a, b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+/* ---------- Notificaciones push de pedidos nuevos ---------- */
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const deB64u = t => Uint8Array.from(atob(t.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((t.length + 3) % 4)), c => c.charCodeAt(0));
+const pushSoportado = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const enPantallaInicio = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function nombreDispositivo() {
+  const u = navigator.userAgent;
+  if (/iPhone/.test(u)) return 'iPhone'; if (/iPad/.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'iPad';
+  if (/Android/.test(u)) return 'Android'; if (/Mac/.test(u)) return 'Mac'; if (/Windows/.test(u)) return 'Ordenador Windows'; return 'Dispositivo';
 }
-async function guardarAvisos(v) {
-  const nuevo = { ...(AVISOS || {}), ...v };
+async function swPanel() {
+  if (!('serviceWorker' in navigator)) return null;
+  try { return await navigator.serviceWorker.register('/sw-admin.js', { scope: '/admin' }); } catch (e) { return null; }
+}
+async function guardarAvisos(cambiar) {
+  const { data } = await sb.from('ajustes').select('valor').eq('clave', 'avisos').maybeSingle();
+  const actual = (data && data.valor) || {};
+  const nuevo = cambiar({ ...actual, subs: Array.isArray(actual.subs) ? actual.subs : [] });
   const { error } = await sb.from('ajustes').upsert({ clave: 'avisos', valor: nuevo });
   if (error) throw error;
   AVISOS = nuevo;
 }
-function pintarAvisos() {
+async function clavesVapid() {
+  if (AVISOS && AVISOS.vapid && AVISOS.vapid.pub) return AVISOS.vapid;
+  const k = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+  const j = await crypto.subtle.exportKey('jwk', k.privateKey);
+  const raw = await crypto.subtle.exportKey('raw', k.publicKey);
+  const vapid = { pub: b64u(raw), d: j.d, x: j.x, y: j.y };
+  await guardarAvisos(a => a.vapid && a.vapid.pub ? a : { ...a, vapid });
+  return AVISOS.vapid;
+}
+async function subActual() {
+  if (!pushSoportado()) return null;
+  const reg = await navigator.serviceWorker.getRegistration('/admin');
+  return reg ? await reg.pushManager.getSubscription() : null;
+}
+async function activarPush() {
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('Has denegado el permiso. Actívalo en Ajustes del iPhone → Notificaciones → EpicOutlet.');
+  const v = await clavesVapid();
+  const reg = await swPanel(); if (!reg) throw new Error('Este navegador no permite notificaciones.');
+  await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (sub) { const k = sub.options && sub.options.applicationServerKey; if (k && b64u(k) !== v.pub) { await sub.unsubscribe(); sub = null; } }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: deB64u(v.pub) });
+  const j = sub.toJSON();
+  const fila = { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, dispositivo: nombreDispositivo(), fecha: new Date().toISOString() };
+  await guardarAvisos(a => ({ ...a, activos: a.activos !== false, subs: [...a.subs.filter(x => x.endpoint !== fila.endpoint), fila] }));
+}
+async function desactivarPush() {
+  const sub = await subActual();
+  if (sub) { const e = sub.endpoint; await sub.unsubscribe().catch(() => {}); await guardarAvisos(a => ({ ...a, subs: a.subs.filter(x => x.endpoint !== e) })); }
+}
+async function pintarAvisos() {
   const c = $('#avisos'); if (!c) return;
-  const t = AVISOS && AVISOS.tema, on = t && AVISOS.activos !== false;
-  c.innerHTML = `
-    <h2 style="font-size:18px">🔔 Avisos de pedidos en el iPhone</h2>
-    <p class="muted" style="margin:0">Cada pedido pagado te llega como notificación, con sonido y aunque tengas el móvil bloqueado: número, importe, productos y cliente. Al tocarla se abre el pedido en este panel.</p>
-    <ol class="small" style="margin:0;padding-left:20px;line-height:1.6">
-      <li>Usa la app gratuita <strong>ntfy</strong> (la misma que ya tienes para ALMARA). Si no la tienes: <a href="https://apps.apple.com/app/id1625396347" target="_blank" rel="noopener">App Store</a>.</li>
-      <li>${t ? 'Copia el nombre de tu canal privado:' : 'Crea tu canal privado (nombre secreto, solo para ti):'}</li>
-      <li>En ntfy pulsa <strong>+</strong>, pega el nombre en «Topic name» y pulsa <strong>Subscribe</strong>.</li>
-      <li>Pulsa «Enviar aviso de prueba» y comprueba que te llega.</li>
-    </ol>
-    ${t ? `<div style="font-family:ui-monospace,monospace;background:#F4F4F6;border-radius:10px;padding:10px 12px;word-break:break-all;font-size:14px">${esc(t)}</div>
+  const subs = (AVISOS && AVISOS.subs) || [];
+  const sub = await subActual().catch(() => null);
+  const aqui = !!(sub && subs.some(x => x.endpoint === sub.endpoint) && Notification.permission === 'granted');
+  const on = !AVISOS || AVISOS.activos !== false;
+  let cuerpo;
+  if (esIOS() && !enPantallaInicio()) {
+    cuerpo = `<div class="msg info">En el iPhone, las notificaciones solo funcionan con el panel añadido a la pantalla de inicio:</div>
+      <ol class="small" style="margin:0;padding-left:20px;line-height:1.7">
+        <li>En Safari, pulsa <strong>Compartir</strong> (el cuadrado con la flecha hacia arriba).</li>
+        <li>Elige <strong>Añadir a pantalla de inicio</strong> y pulsa <strong>Añadir</strong>.</li>
+        <li>Abre <strong>EpicOutlet</strong> desde el icono nuevo, entra y vuelve a Ajustes.</li>
+      </ol>`;
+  } else if (!pushSoportado()) {
+    cuerpo = `<div class="msg err">Este navegador no permite notificaciones. En el iPhone necesitas iOS 16.4 o posterior.</div>`;
+  } else if (aqui) {
+    cuerpo = `<div class="msg ok">✓ Notificaciones activadas en este ${esc(nombreDispositivo())}.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn b-dark" id="avCopiar" type="button">Copiar nombre del canal</button>
-        <button class="btn b-line" id="avProbar" type="button">Enviar aviso de prueba</button>
-      </div>
-      <label class="check"><input type="checkbox" id="avOn" ${on ? 'checked' : ''}>Avisarme de cada pedido nuevo</label>
-      <button class="btn b-line" id="avCambiar" type="button" style="align-self:flex-start;font-size:13px;min-height:36px">Cambiar el canal (si lo has compartido por error)</button>`
-    : `<button class="btn b-brand" id="avCrear" type="button" style="align-self:flex-start">Crear mi canal</button>`}
+        <button class="btn b-dark" id="avProbar" type="button">Enviar aviso de prueba</button>
+        <button class="btn b-line" id="avQuitar" type="button">Desactivar en este dispositivo</button>
+      </div>`;
+  } else {
+    cuerpo = `<button class="btn b-brand" id="avActivar" type="button" style="align-self:flex-start">Activar notificaciones en este ${esc(nombreDispositivo())}</button>`;
+  }
+  c.innerHTML = `
+    <h2 style="font-size:18px">🔔 Avisos de pedidos nuevos</h2>
+    <p class="muted" style="margin:0">Cada pedido pagado te llega como notificación de <strong>EpicOutlet</strong>, con sonido y aunque tengas el móvil bloqueado: número, importe, productos y cliente. Al tocarla se abre el pedido.</p>
+    ${cuerpo}
+    ${subs.length ? `<label class="check"><input type="checkbox" id="avOn" ${on ? 'checked' : ''}>Avisarme de cada pedido nuevo</label>
+      <p class="small" style="margin:0">Dispositivos activados: ${subs.map(x => esc(x.dispositivo || 'Dispositivo')).join(', ')}.</p>` : ''}
     <div id="avMsg"></div>`;
   const msg = (h, ok) => { $('#avMsg').innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${h}</div>`; };
-  const fallo = e => msg('No se ha podido guardar: ' + esc(e.message || e) + '. Comprueba que la tabla «ajustes» existe en Supabase.', false);
-  if ($('#avCrear')) $('#avCrear').onclick = async () => { try { await guardarAvisos({ tema: nuevoCanal(), activos: true }); pintarAvisos(); } catch (e) { fallo(e); } };
-  if ($('#avCopiar')) $('#avCopiar').onclick = async () => {
-    try { await navigator.clipboard.writeText(t); msg('Copiado. Ahora pégalo en ntfy → + → Topic name → Subscribe.', true); }
-    catch (e) { msg('Mantén pulsado el nombre del canal para copiarlo.', false); }
+  const ocupado = (b, t) => { b.disabled = true; b.dataset.t = b.textContent; b.textContent = t; };
+  if ($('#avActivar')) $('#avActivar').onclick = async ev => {
+    const b = ev.target; ocupado(b, 'Activando…');
+    try { await activarPush(); await pintarAvisos(); msg('Listo. Pulsa «Enviar aviso de prueba» para comprobarlo.', true); }
+    catch (e) { b.disabled = false; b.textContent = b.dataset.t; msg(esc(e.message || e), false); }
   };
-  if ($('#avProbar')) $('#avProbar').onclick = async () => {
-    const b = $('#avProbar'); b.disabled = true; b.textContent = 'Enviando…';
+  if ($('#avQuitar')) $('#avQuitar').onclick = async () => { try { await desactivarPush(); await pintarAvisos(); msg('Desactivadas en este dispositivo.', true); } catch (e) { msg(esc(e.message), false); } };
+  if ($('#avProbar')) $('#avProbar').onclick = async ev => {
+    const b = ev.target; ocupado(b, 'Enviando…');
     try {
-      const r = await fetch('/api/aviso-prueba', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ tema: t }) });
+      const r = await fetch('/api/aviso-prueba', { method: 'POST', headers: { Authorization: 'Bearer ' + session.access_token } });
       const j = await r.json().catch(() => ({}));
-      r.ok ? msg('Aviso enviado. Debería llegarte en unos segundos. Si no llega, revisa que te has suscrito al canal en ntfy y que ntfy tiene las notificaciones permitidas en Ajustes del iPhone.', true)
-           : msg('No se ha podido enviar (' + esc(j.motivo || j.error || r.status) + ').', false);
+      if (j.ok) msg(`Enviado a ${j.enviados} dispositivo${j.enviados > 1 ? 's' : ''}. Bloquea el móvil: te llegará en unos segundos.`, true);
+      else msg('No se ha podido enviar: ' + esc(j.motivo || j.error || (j.resultados || []).map(x => `${x.dispositivo} ${x.estado} ${x.texto}`).join(' · ') || r.status), false);
     } catch (e) { msg('No se ha podido enviar: ' + esc(e.message), false); }
-    b.disabled = false; b.textContent = 'Enviar aviso de prueba';
+    b.disabled = false; b.textContent = b.dataset.t;
   };
   if ($('#avOn')) $('#avOn').onchange = async e => {
-    try { await guardarAvisos({ activos: e.target.checked }); msg(e.target.checked ? 'Avisos activados.' : 'Avisos desactivados. No te llegará nada hasta que vuelvas a marcarlo.', true); } catch (x) { fallo(x); }
-  };
-  if ($('#avCambiar')) $('#avCambiar').onclick = async () => {
-    if (!confirm('Se creará un canal nuevo y tendrás que suscribirte otra vez en ntfy. ¿Seguir?')) return;
-    try { await guardarAvisos({ tema: nuevoCanal() }); pintarAvisos(); } catch (e) { fallo(e); }
+    try { await guardarAvisos(a => ({ ...a, activos: e.target.checked })); msg(e.target.checked ? 'Avisos activados.' : 'Avisos pausados: no te llegará nada hasta que vuelvas a marcarlo.', true); }
+    catch (x) { msg('No se ha podido guardar: ' + esc(x.message), false); }
   };
 }
 

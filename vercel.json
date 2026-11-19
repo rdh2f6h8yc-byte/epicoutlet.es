@@ -2,31 +2,99 @@
   "cleanUrls": false,
   "trailingSlash": false,
   "functions": {
-    "api/pagina.js": { "includeFiles": "index.html" }
+    "api/pagina.js": {
+      "includeFiles": "index.html"
+    }
   },
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/producto/:clave", "destination": "/api/pagina?t=producto&k=:clave" },
-    { "source": "/coleccion/:clave", "destination": "/api/pagina?t=coleccion&k=:clave" },
-    { "source": "/info/:clave", "destination": "/api/pagina?t=info&k=:clave" },
-    { "source": "/carrito", "destination": "/api/pagina?t=carrito" },
-    { "source": "/cuenta", "destination": "/api/pagina?t=cuenta" },
-    { "source": "/gracias", "destination": "/api/pagina?t=gracias" },
-    { "source": "/buscar", "destination": "/api/pagina?t=buscar" }
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/producto/:clave",
+      "destination": "/api/pagina?t=producto&k=:clave"
+    },
+    {
+      "source": "/coleccion/:clave",
+      "destination": "/api/pagina?t=coleccion&k=:clave"
+    },
+    {
+      "source": "/info/:clave",
+      "destination": "/api/pagina?t=info&k=:clave"
+    },
+    {
+      "source": "/carrito",
+      "destination": "/api/pagina?t=carrito"
+    },
+    {
+      "source": "/cuenta",
+      "destination": "/api/pagina?t=cuenta"
+    },
+    {
+      "source": "/gracias",
+      "destination": "/api/pagina?t=gracias"
+    },
+    {
+      "source": "/buscar",
+      "destination": "/api/pagina?t=buscar"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": ".*\\.vercel\\.app" }],
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      "has": [
+        {
+          "type": "host",
+          "value": ".*\\.vercel\\.app"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     },
     {
       "source": "/admin(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/img/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/sw-admin.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/admin"
+        }
+      ]
+    },
+    {
+      "source": "/admin.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
     }
   ]
 }
