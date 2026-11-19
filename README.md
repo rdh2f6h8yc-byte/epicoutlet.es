@@ -72,3 +72,7 @@ Cuando un cliente paga, el pedido aparece en *Panel → Pedidos* con el enlace p
 3. Con `gaId` relleno aparece el aviso de cookies (Aceptar / Rechazar / Configurar). Analytics **solo se carga si el cliente acepta** (normativa de la AEPD). El cliente puede cambiar su elección en «Configurar cookies» del pie de página.
 4. Se envían: vistas de página (también al navegar sin recargar), `add_to_cart`, `begin_checkout` y `purchase` (con el número y el total del pedido; los pedidos de prueba a 0 € no se cuentan).
 5. En Analytics → Administrar → Retención de datos, pon 14 meses; y en Eventos clave marca `purchase`.
+
+## Avisos de pedidos en el iPhone
+
+Panel → Ajustes → «Avisos de pedidos en el iPhone»: crea un canal privado, suscríbete a él en la app gratuita **ntfy** y prueba. Cada pedido pagado (webhook de Stripe) manda una notificación con número, importe, productos y cliente; al tocarla se abre el pedido en /admin. El canal se guarda en `ajustes` (clave `avisos`), que solo lee el administrador.

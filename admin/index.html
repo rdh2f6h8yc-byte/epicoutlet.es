@@ -138,6 +138,7 @@ const CFG = typeof EO_CONFIG !== 'undefined' ? EO_CONFIG : {};
 const AJ_DEF = { margen: 40, iva: 21, costeConIva: false, redondeo: '90', usarPvp: true, cat: {} };
 let AJ = { ...AJ_DEF };
 let ENV = { precio: null, gratisDesde: null };
+let AVISOS = null;
 async function cargarAjustes() {
   try {
     const { data, error } = await sb.from('ajustes').select('valor').eq('clave', 'precios').maybeSingle();
@@ -146,6 +147,8 @@ async function cargarAjustes() {
     AJ._db = true;
     const { data: e } = await sb.from('ajustes').select('valor').eq('clave', 'envio').maybeSingle();
     if (e && e.valor) ENV = { precio: e.valor.precio ?? null, gratisDesde: e.valor.gratisDesde ?? null };
+    const { data: av } = await sb.from('ajustes').select('valor').eq('clave', 'avisos').maybeSingle();
+    AVISOS = av && av.valor || null;
   } catch (e) {
     try { const l = JSON.parse(localStorage.getItem('eo_ajustes') || 'null'); if (l) AJ = { ...AJ_DEF, ...l, _guardado: true }; } catch (x) {}
     AJ._db = false;
@@ -190,6 +193,9 @@ let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null
     history.replaceState(null, '', location.pathname);
   } else if (h.startsWith('#lista=')) {
     sessionStorage.setItem('eo_lista', decodeURIComponent(h.slice(7)));
+    history.replaceState(null, '', location.pathname);
+  } else if (h.startsWith('#pedido=')) {
+    sessionStorage.setItem('eo_pedido', h.slice(8));
     history.replaceState(null, '', location.pathname);
   } else if (h.startsWith('#error=')) {
     sessionStorage.setItem('eo_err', 'El atajo no ha podido leer la página: ' + decodeURIComponent(h.slice(7)));
@@ -236,7 +242,8 @@ async function entrar() {
   $('#tabs').hidden = false; $('#salir').hidden = false;
   await Promise.all([cargar(), cargarAjustes(), cargarPedidos()]);
   if (PEDIDOS.some(p => p.estado === 'pagado')) vista = 'pedidos';
-  const pend = sessionStorage.getItem('eo_pend'), err = sessionStorage.getItem('eo_err'), lista = sessionStorage.getItem('eo_lista');
+  const pend = sessionStorage.getItem('eo_pend'), err = sessionStorage.getItem('eo_err'), lista = sessionStorage.getItem('eo_lista'), pedAv = sessionStorage.getItem('eo_pedido');
+  if (pedAv) { sessionStorage.removeItem('eo_pedido'); if (PEDIDOS.some(p => p.id === pedAv)) { vista = 'pedidos'; pedidoAbierto = pedAv; return pintar(); } }
   if (pend) { sessionStorage.removeItem('eo_pend'); await abrirDelAtajo(JSON.parse(pend)); }
   else if (lista) { sessionStorage.removeItem('eo_lista'); await abrirEnlace(lista); }
   else if (err) { sessionStorage.removeItem('eo_err'); vista = 'importar'; pintar(); toast(err); }
@@ -567,6 +574,63 @@ async function copiar(texto, msg) {
 }
 
 /* ---------- Ajustes de precio ---------- */
+function nuevoCanal() {
+  const a = new Uint8Array(15); crypto.getRandomValues(a);
+  return 'epicoutlet-' + Array.from(a, b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+}
+async function guardarAvisos(v) {
+  const nuevo = { ...(AVISOS || {}), ...v };
+  const { error } = await sb.from('ajustes').upsert({ clave: 'avisos', valor: nuevo });
+  if (error) throw error;
+  AVISOS = nuevo;
+}
+function pintarAvisos() {
+  const c = $('#avisos'); if (!c) return;
+  const t = AVISOS && AVISOS.tema, on = t && AVISOS.activos !== false;
+  c.innerHTML = `
+    <h2 style="font-size:18px">🔔 Avisos de pedidos en el iPhone</h2>
+    <p class="muted" style="margin:0">Cada pedido pagado te llega como notificación, con sonido y aunque tengas el móvil bloqueado: número, importe, productos y cliente. Al tocarla se abre el pedido en este panel.</p>
+    <ol class="small" style="margin:0;padding-left:20px;line-height:1.6">
+      <li>Usa la app gratuita <strong>ntfy</strong> (la misma que ya tienes para ALMARA). Si no la tienes: <a href="https://apps.apple.com/app/id1625396347" target="_blank" rel="noopener">App Store</a>.</li>
+      <li>${t ? 'Copia el nombre de tu canal privado:' : 'Crea tu canal privado (nombre secreto, solo para ti):'}</li>
+      <li>En ntfy pulsa <strong>+</strong>, pega el nombre en «Topic name» y pulsa <strong>Subscribe</strong>.</li>
+      <li>Pulsa «Enviar aviso de prueba» y comprueba que te llega.</li>
+    </ol>
+    ${t ? `<div style="font-family:ui-monospace,monospace;background:#F4F4F6;border-radius:10px;padding:10px 12px;word-break:break-all;font-size:14px">${esc(t)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn b-dark" id="avCopiar" type="button">Copiar nombre del canal</button>
+        <button class="btn b-line" id="avProbar" type="button">Enviar aviso de prueba</button>
+      </div>
+      <label class="check"><input type="checkbox" id="avOn" ${on ? 'checked' : ''}>Avisarme de cada pedido nuevo</label>
+      <button class="btn b-line" id="avCambiar" type="button" style="align-self:flex-start;font-size:13px;min-height:36px">Cambiar el canal (si lo has compartido por error)</button>`
+    : `<button class="btn b-brand" id="avCrear" type="button" style="align-self:flex-start">Crear mi canal</button>`}
+    <div id="avMsg"></div>`;
+  const msg = (h, ok) => { $('#avMsg').innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${h}</div>`; };
+  const fallo = e => msg('No se ha podido guardar: ' + esc(e.message || e) + '. Comprueba que la tabla «ajustes» existe en Supabase.', false);
+  if ($('#avCrear')) $('#avCrear').onclick = async () => { try { await guardarAvisos({ tema: nuevoCanal(), activos: true }); pintarAvisos(); } catch (e) { fallo(e); } };
+  if ($('#avCopiar')) $('#avCopiar').onclick = async () => {
+    try { await navigator.clipboard.writeText(t); msg('Copiado. Ahora pégalo en ntfy → + → Topic name → Subscribe.', true); }
+    catch (e) { msg('Mantén pulsado el nombre del canal para copiarlo.', false); }
+  };
+  if ($('#avProbar')) $('#avProbar').onclick = async () => {
+    const b = $('#avProbar'); b.disabled = true; b.textContent = 'Enviando…';
+    try {
+      const r = await fetch('/api/aviso-prueba', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ tema: t }) });
+      const j = await r.json().catch(() => ({}));
+      r.ok ? msg('Aviso enviado. Debería llegarte en unos segundos. Si no llega, revisa que te has suscrito al canal en ntfy y que ntfy tiene las notificaciones permitidas en Ajustes del iPhone.', true)
+           : msg('No se ha podido enviar (' + esc(j.motivo || j.error || r.status) + ').', false);
+    } catch (e) { msg('No se ha podido enviar: ' + esc(e.message), false); }
+    b.disabled = false; b.textContent = 'Enviar aviso de prueba';
+  };
+  if ($('#avOn')) $('#avOn').onchange = async e => {
+    try { await guardarAvisos({ activos: e.target.checked }); msg(e.target.checked ? 'Avisos activados.' : 'Avisos desactivados. No te llegará nada hasta que vuelvas a marcarlo.', true); } catch (x) { fallo(x); }
+  };
+  if ($('#avCambiar')) $('#avCambiar').onclick = async () => {
+    if (!confirm('Se creará un canal nuevo y tendrás que suscribirte otra vez en ntfy. ¿Seguir?')) return;
+    try { await guardarAvisos({ tema: nuevoCanal() }); pintarAvisos(); } catch (e) { fallo(e); }
+  };
+}
+
 function pintarAjustes() {
   const conCoste = PRODS.filter(p => nOrNull((PRIV[p.id] || {}).coste));
   const ej = precioSugerido(10, '__general');
@@ -610,7 +674,9 @@ function pintarAjustes() {
       <p class="muted" style="margin:0">Aplica el margen guardado a los <strong>${conCoste.length}</strong> productos que tienen el coste apuntado. Los que no tienen coste no se tocan.</p>
       <button class="btn b-line" id="recalc" ${conCoste.length ? '' : 'disabled'}>Recalcular ${conCoste.length} precios</button>
       <div id="recMsg"></div>
-    </div>`;
+    </div>
+    <div class="card stack" style="margin-top:14px" id="avisos"></div>`;
+  pintarAvisos();
   const form = $('#aj');
   const leer = () => {
     const f = new FormData(form);

@@ -3,6 +3,7 @@
 // checkout.session.completed, checkout.session.async_payment_succeeded,
 // checkout.session.async_payment_failed y checkout.session.expired.
 const { db, firmaValida, leerCrudo, secretoWebhook } = require('./_srv.js');
+const { avisar, avisoPedido } = require('./_avisos.js');
 
 async function marcarPagado(s) {
   const id = (s.metadata || {}).pedido_id || s.client_reference_id;
@@ -22,6 +23,7 @@ async function marcarPagado(s) {
   // Solo pasa de "pendiente" a "pagado" una vez, aunque Stripe repita el aviso
   const hechos = await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(cambios) });
   if (!hechos || !hechos.length) return;
+  await avisar(avisoPedido(hechos[0])).catch(() => {}); // aviso al iPhone (si falla, el pedido sigue igual)
   if (String(hechos[0].notas || '').startsWith('PRUEBA')) return; // los pedidos de prueba no restan stock
   for (const l of hechos[0].productos || []) {
     if (l.producto_id) await db('rpc/descontar_stock', { method: 'POST', body: JSON.stringify({ p_id: l.producto_id, n: l.cantidad }) });
