@@ -30,6 +30,23 @@ async function marcarPagado(s) {
   }
 }
 
+// El cliente llegó a la pantalla de pago de Stripe pero no pagó (la cerró o el banco rechazó el pago)
+async function marcarSinPago(id, s, motivo) {
+  const prev = await db(`pedidos?id=eq.${id}&estado=eq.pendiente&select=notas`);
+  if (!prev || !prev.length) return;
+  const cli = s.customer_details || {};
+  const cuando = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const texto = motivo === 'caducado'
+    ? `SIN PAGO · El cliente abrió la pantalla de pago y no llegó a pagar; Stripe la cerró el ${cuando}.`
+    : `SIN PAGO · El pago fue rechazado (banco o método de pago) el ${cuando}.`;
+  const notas = [prev[0].notas, texto].filter(Boolean).join('\n');
+  const cambios = { estado: 'cancelado', notas };
+  if (cli.email) cambios.cliente_email = cli.email;
+  if (cli.name) cambios.cliente_nombre = cli.name;
+  if (cli.phone) cambios.cliente_telefono = cli.phone;
+  await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', body: JSON.stringify(cambios) });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).send('Método no permitido');
   const raw = await leerCrudo(req);
@@ -41,7 +58,7 @@ module.exports = async (req, res) => {
       if (s.payment_status === 'paid' || s.payment_status === 'no_payment_required') await marcarPagado(s);
     } else if (ev.type === 'checkout.session.expired' || ev.type === 'checkout.session.async_payment_failed') {
       const id = (s.metadata || {}).pedido_id || s.client_reference_id;
-      if (id) await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', body: JSON.stringify({ estado: 'cancelado' }) });
+      if (id) await marcarSinPago(id, s, ev.type === 'checkout.session.expired' ? 'caducado' : 'rechazado');
     }
     return res.status(200).json({ recibido: true });
   } catch (e) {

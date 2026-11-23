@@ -451,7 +451,7 @@ const EST_PED = {
   pedido_proveedor: ['Pedido al proveedor', '#E6EEF8', '#1F4E86'],
   enviado: ['Enviado', '#F1ECFA', '#55348F'],
   entregado: ['Entregado', '#E3F2E8', '#1D6B3A'],
-  cancelado: ['Cancelado', '#F4F4F6', '#5C5C64'],
+  cancelado: ['No pagó', '#F4F4F6', '#5C5C64'],
   reembolsado: ['Reembolsado', '#F4F4F6', '#5C5C64'],
   pendiente: ['Sin pagar', '#F4F4F6', '#5C5C64']
 };
@@ -462,8 +462,9 @@ const costeDe = id => { const v = (PRIV[id] || {}).coste; return v == null ? nul
 const urlProv = id => (PRIV[id] || {}).origen_url || '';
 
 function pintarPedidos() {
-  const grupos = { gestionar: ['pagado', 'pedido_proveedor'], enviados: ['enviado', 'entregado'], todos: null };
-  const list = PEDIDOS.filter(p => !grupos[filtroPed] || grupos[filtroPed].includes(p.estado));
+  const grupos = { gestionar: ['pagado', 'pedido_proveedor'], enviados: ['enviado', 'entregado'], todos: ['pagado', 'pedido_proveedor', 'enviado', 'entregado', 'reembolsado'], sinpago: ['cancelado'] };
+  const list = PEDIDOS.filter(p => grupos[filtroPed].includes(p.estado));
+  const nSin = PEDIDOS.filter(p => p.estado === 'cancelado').length;
   const porPedir = PEDIDOS.filter(p => p.estado === 'pagado').length;
   $('#app').innerHTML = `
     <div class="row" style="justify-content:space-between;margin-bottom:12px">
@@ -472,14 +473,15 @@ function pintarPedidos() {
     </div>
     ${PEDIDOS._error ? '<div class="msg err" style="margin-bottom:12px">No se pueden leer los pedidos. Ejecuta <code>supabase/pedidos.sql</code> en Supabase → SQL Editor.</div>' : ''}
     <div class="row" style="margin-bottom:12px">
-      ${[['gestionar', 'Por gestionar'], ['enviados', 'Enviados'], ['todos', 'Todos']].map(([k, n]) => `<button class="btn ${filtroPed === k ? 'b-dark' : 'b-ghost'}" data-fp="${k}" style="min-height:40px;padding:0 14px;font-size:14px">${n}</button>`).join('')}
+      ${[['gestionar', 'Por gestionar'], ['enviados', 'Enviados'], ['todos', 'Todos'], ['sinpago', `No pagados${nSin ? ' · ' + nSin : ''}`]].map(([k, n]) => `<button class="btn ${filtroPed === k ? 'b-dark' : 'b-ghost'}" data-fp="${k}" style="min-height:40px;padding:0 14px;font-size:14px">${n}</button>`).join('')}
     </div>
+    ${filtroPed === 'sinpago' ? '<div class="msg info" style="margin-bottom:12px">Clientes que llegaron a la pantalla de pago y no pagaron (la cerraron o les rechazaron la tarjeta). No son pedidos: no tienes que hacer nada con ellos. Si dejaron su correo, puedes escribirles para recuperar la venta.</div>' : ''}
     <div class="card" style="padding:6px 18px">
       ${list.length ? list.map(p => `
         <button class="prow" data-ped="${p.id}" style="width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;cursor:pointer">
           ${(p.productos[0] || {}).imagen ? `<img class="thumb" src="${esc(p.productos[0].imagen)}" alt="">` : '<div class="thumb">—</div>'}
           <div class="pinfo">
-            <div class="pname">#${p.numero} · ${esc(p.cliente_nombre || 'Cliente')}${String(p.notas || '').startsWith('PRUEBA') ? ' · <span style="color:var(--brand-dark)">PRUEBA</span>' : ''}</div>
+            <div class="pname">#${p.numero} · ${esc(p.cliente_nombre || p.cliente_email || (p.estado === 'cancelado' ? 'Cliente sin identificar' : 'Cliente'))}${String(p.notas || '').startsWith('PRUEBA') ? ' · <span style="color:var(--brand-dark)">PRUEBA</span>' : ''}</div>
             <div class="small">${fecha(p.pagado || p.creado)} · ${p.productos.reduce((a, l) => a + l.cantidad, 0)} art. · <strong style="color:var(--ink)">${eur(p.total)}</strong></div>
             ${chipPed(p.estado)}
           </div>
@@ -491,6 +493,37 @@ function pintarPedidos() {
   $('#recargarPed').onclick = async () => { await Promise.all([cargarPedidos(), cargar()]); pintarPedidos(); toast('Pedidos actualizados'); };
 }
 
+function motivoSinPago(p) {
+  const l = String(p.notas || '').split('\n').find(x => x.startsWith('SIN PAGO · '));
+  return l ? l.slice(11) : 'El cliente abrió la pantalla de pago de Stripe y no llegó a pagar (cerró la página, volvió atrás o le rechazaron la tarjeta). Stripe cierra ese pago a las 24 horas y lo marca así.';
+}
+function pintarSinPago(p) {
+  const asunto = encodeURIComponent('Tu carrito en EpicOutlet.es');
+  const cuerpo = encodeURIComponent(`Hola${p.cliente_nombre ? ' ' + p.cliente_nombre.split(' ')[0] : ''}:\n\nHemos visto que no pudiste terminar tu compra en EpicOutlet.es:\n${p.productos.map(l => `- ${l.nombre}`).join('\n')}\n\n¿Tuviste algún problema con el pago? Si quieres, te ayudamos a completarlo. Las unidades son limitadas.\n\nUn saludo,\nEpicOutlet.es`);
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+      <button class="btn b-ghost" id="volverPed" style="min-height:44px">← Pedidos</button>
+      ${chipPed(p.estado)}
+    </div>
+    <div class="card stack">
+      <div class="row" style="justify-content:space-between"><h1 style="font-size:24px">#${p.numero} · sin pagar</h1><strong style="font-size:22px">${eur(p.total)}</strong></div>
+      <div class="msg info"><strong>¿Por qué sale así?</strong><br>${esc(motivoSinPago(p))}</div>
+      <p class="small" style="margin:0">No se ha cobrado nada, no se ha restado stock y no tienes que pedir nada al proveedor. Lo ha cerrado Stripe automáticamente, no tú.</p>
+      <div class="small">Empezó el pago el ${fecha(p.creado)}</div>
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:18px">Lo que quería comprar</h2>
+      ${p.productos.map(l => `<div class="prow">${l.imagen ? `<img class="thumb" src="${esc(l.imagen)}" alt="">` : '<div class="thumb">—</div>'}<div class="pinfo"><div style="font-weight:600;font-size:14px;line-height:1.35">${esc(l.nombre)}</div><div class="small">${l.cantidad} × ${eur(l.precio)}</div></div></div>`).join('')}
+    </div>
+    <div class="card stack">
+      <h2 style="font-size:18px">Cliente</h2>
+      ${p.cliente_email || p.cliente_nombre ? `<div>${esc(p.cliente_nombre || '')}${p.cliente_nombre && p.cliente_email ? '<br>' : ''}${esc(p.cliente_email || '')}${p.cliente_telefono ? '<br>' + esc(p.cliente_telefono) : ''}</div>
+        ${p.cliente_email ? `<a class="btn b-dark" href="mailto:${esc(p.cliente_email)}?subject=${asunto}&body=${cuerpo}">Escribirle para recuperar la venta</a>` : ''}`
+      : '<p class="muted" style="margin:0">No sabemos quién es: salió antes de escribir sus datos en la pantalla de pago.</p>'}
+    </div>`;
+  $('#volverPed').onclick = () => { pedidoAbierto = null; pintar(); };
+}
+
 function pintarPedido() {
   const p = PEDIDOS.find(x => x.id === pedidoAbierto);
   if (!p) { pedidoAbierto = null; return pintarPedidos(); }
@@ -498,6 +531,7 @@ function pintarPedido() {
   const ivaF = 1 + AJ.iva / 100, costeNeto = AJ.costeConIva ? coste / ivaF : coste;
   const beneficio = isNaN(coste) ? null : Number(p.total) / ivaF - costeNeto;
   const dir = dirTexto(p);
+  if (p.estado === 'cancelado') return pintarSinPago(p);
   $('#app').innerHTML = `
     <div class="row" style="justify-content:space-between;margin-bottom:12px">
       <button class="btn b-ghost" id="volverPed" style="min-height:44px">← Pedidos</button>
