@@ -96,5 +96,26 @@
         }
       ]
     }
-  ]
+  ],
+  "images": {
+    "sizes": [
+      384,
+      640,
+      1080
+    ],
+    "formats": [
+      "image/webp"
+    ],
+    "minimumCacheTTL": 2592000,
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "ajvbndzdkikacliqzjot.supabase.co"
+      },
+      {
+        "protocol": "https",
+        "hostname": "cdn.shopify.com"
+      }
+    ]
+  }
 }
