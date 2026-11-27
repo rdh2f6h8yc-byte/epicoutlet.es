@@ -309,6 +309,7 @@ function tarjetaSync() {
         <div class="small">${enCurso ? 'Comprobando ahora… tarda uno o dos minutos.' : u ? `Última revisión: ${fecha(u.fecha)} · ${u.revisados} productos · ${n ? `<a href="#" id="syncVer" style="font-weight:700">${n} cambio${n > 1 ? 's' : ''}</a>` : 'sin cambios'}${u.sinLeer ? ` · ${u.sinLeer} sin poder leer` : ''}` : 'Se revisa sola cada mañana a las 6:00. Los agotados se ocultan y vuelven solos cuando hay stock.'}</div></div>
       <button class="btn b-line" id="syncYa" style="min-height:40px;font-size:14px" ${enCurso ? 'disabled' : ''}>Comprobar ahora</button>
     </div>
+    ${u && u.frenado ? `<div class="msg err" style="margin-top:10px">⚠️ En la última revisión salían ${u.sinOcultar} productos agotados de golpe${u.sinLeer ? ` y ${u.sinLeer} no se pudieron leer` : ''}. Parece un bloqueo o un cambio en la web del proveedor, así que <strong>no se ha ocultado nada</strong>. Se volverá a intentar mañana.</div>` : ''}
     ${u && syncAbierto ? linea('Agotados en el proveedor (ocultados)', u.agotados, x => x.retirado ? 'ya no existe en su web' : '')
       + linea('El proveedor vende igual o más caro que tú (ocultados)', u.perdidas, x => `coste ${eur(x.coste)}, tu precio ${eur(x.tuPrecio)}`)
       + linea('Cambios de precio del proveedor', u.precios, x => `${eur(x.antes)} → ${eur(x.ahora)} (tú lo vendes a ${eur(x.tuPrecio)})`)

@@ -9,7 +9,8 @@ const { db, claveSupabase } = require('./_srv.js');
 const { UA, esAdmin, extraerHTML, shopifyBase, desdeShopify } = require('./_util.js');
 const { avisar } = require('./_avisos.js');
 
-const PRESUPUESTO_MS = 40000, PARALELO = 6;
+const PRESUPUESTO_MS = 40000, PARALELO = 3;
+const espera = ms => new Promise(r => setTimeout(r, ms));
 const claveInterna = () => crypto.createHmac('sha256', String(claveSupabase() || 'x')).update('eo-sync').digest('hex');
 
 async function permitido(req) {
@@ -27,30 +28,47 @@ async function conTiempo(url, opt = {}, ms = 12000) {
 }
 
 const basesShopify = {};
-async function baseDe(origen) {
-  if (origen in basesShopify) return basesShopify[origen];
-  basesShopify[origen] = null;
-  try { const r = await conTiempo(origen + '/', { headers: { 'User-Agent': UA } }); if (r.ok) basesShopify[origen] = shopifyBase(await r.text(), origen + '/'); } catch (e) {}
+function baseDe(origen) {
+  // se guarda la promesa para que las peticiones en paralelo esperen a la misma respuesta
+  if (!basesShopify[origen]) basesShopify[origen] = (async () => {
+    for (let intento = 0; intento < 2; intento++) {
+      try { const r = await conTiempo(origen + '/', { headers: { 'User-Agent': UA } }); if (r.ok) return shopifyBase(await r.text(), origen + '/'); } catch (e) {}
+      await espera(1500);
+    }
+    return null;
+  })();
   return basesShopify[origen];
 }
 
-// Lee disponibilidad y precio del proveedor. Devuelve { disponible, precio } o null si no se ha podido leer.
+// Lee disponibilidad y precio del proveedor. Devuelve { disponible, precio }, o null si no se ha podido saber
+// (bloqueo, demasiadas peticiones, error del servidor…): en ese caso no se toca nada.
+async function pedirJS(url) {
+  for (let intento = 0; intento < 3; intento++) {
+    const r = await conTiempo(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+    if (r.status === 429 || r.status >= 500) { await espera(1500 * (intento + 1)); continue; }
+    return r;
+  }
+  return null;
+}
 async function leerProveedor(url) {
   const u = new URL(url);
   const handle = (u.pathname.match(/\/products\/([^/?#]+)/) || [])[1];
   if (handle) {
     const sb = await baseDe(u.origin);
-    for (const base of [sb, u.origin].filter(Boolean)) {
-      try {
-        const r = await conTiempo(`${base}/products/${handle}.js`, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
-        if (r.status === 404) { if (base === u.origin || !sb) return { disponible: false, precio: null, retirado: true }; continue; }
-        if (r.ok) { const d = desdeShopify(await r.json(), u.origin); return { disponible: d.disponible, precio: d.precio }; }
-      } catch (e) {}
+    if (sb) {
+      // Tienda Shopify (aunque la web sea a medida): su respuesta es la fiable
+      const r = await pedirJS(`${sb}/products/${handle}.js`);
+      if (!r) return null;
+      if (r.status === 404) return { disponible: false, precio: null, retirado: true };
+      if (!r.ok) return null;
+      const txt = await r.text();
+      if (!/^\s*\{/.test(txt)) return null;               // página de bloqueo o de verificación, no datos
+      const d = desdeShopify(JSON.parse(txt), u.origin);
+      return { disponible: d.disponible, precio: d.precio };
     }
   }
   const r = await conTiempo(url, { headers: { 'User-Agent': UA, Accept: 'text/html' } });
-  if (r.status === 404 || r.status === 410) return { disponible: false, precio: null, retirado: true };
-  if (!r.ok) return null;
+  if (!r.ok) return null;                                  // un 404 de una web desconocida no basta para darlo por retirado
   const d = await extraerHTML((await r.text()).slice(0, 3000000), r.url || url);
   if (!d.nombre) return null;
   return { disponible: d.disponible !== false, precio: d.precio };
@@ -70,7 +88,7 @@ module.exports = async (req, res) => {
   S.ocultados = S.ocultados || {};
   if (!continuar) {
     if (S.enCurso && Date.now() - new Date(S.enCurso).getTime() < 10 * 60000) return res.status(200).json({ ok: true, yaEnCurso: true });
-    S = { ...S, enCurso: new Date().toISOString(), cursor: 0, ronda: { revisados: 0, sinLeer: 0, agotados: [], vuelven: [], precios: [], perdidas: [] } };
+    S = { ...S, enCurso: new Date().toISOString(), cursor: 0, ronda: { revisados: 0, sinLeer: 0, agotados: [], vuelven: [], precios: [], perdidas: [], pendientes: [] } };
   }
   const guardar = () => db('ajustes', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ clave: 'sync', valor: S }) });
 
@@ -87,11 +105,8 @@ module.exports = async (req, res) => {
     const nombre = String(p.nombre || '').slice(0, 90);
     const oculto = S.ocultados[p.id];
     if (!info.disponible) {
-      if (p.stock > 0) {
-        S.ocultados[p.id] = p.stock;
-        await db(`productos?id=eq.${p.id}`, { method: 'PATCH', body: JSON.stringify({ stock: 0 }) });
-        R.agotados.push({ id: p.id, nombre, retirado: !!info.retirado });
-      }
+      // no se oculta todavía: se apunta y se decide al final (freno de seguridad)
+      if (p.stock > 0) R.pendientes.push({ id: p.id, nombre, stock: p.stock, tipo: 'agotado', retirado: !!info.retirado });
       return;
     }
     // precio del proveedor
@@ -100,11 +115,7 @@ module.exports = async (req, res) => {
       R.precios.push({ id: p.id, nombre, antes: Number(x.coste), ahora: info.precio, tuPrecio: Number(p.precio) });
     }
     if (info.precio && Number(p.precio) <= info.precio) {
-      if (p.stock > 0) {
-        S.ocultados[p.id] = p.stock;
-        await db(`productos?id=eq.${p.id}`, { method: 'PATCH', body: JSON.stringify({ stock: 0 }) });
-        R.perdidas.push({ id: p.id, nombre, coste: info.precio, tuPrecio: Number(p.precio) });
-      }
+      if (p.stock > 0) R.pendientes.push({ id: p.id, nombre, stock: p.stock, tipo: 'perdida', coste: info.precio, tuPrecio: Number(p.precio) });
       return;
     }
     if (oculto && p.stock === 0) {
@@ -127,11 +138,27 @@ module.exports = async (req, res) => {
     return res.status(202).json({ ok: true, sigue: true, revisados: R.revisados, total: lista.length });
   }
 
-  // terminado
+  // terminado: freno de seguridad. Si de golpe salen agotados muchísimos, lo más probable es que el
+  // proveedor nos esté bloqueando o haya cambiado su web: no se oculta nada y se avisa.
+  const pend = R.pendientes || []; delete R.pendientes;
+  const limite = Math.max(15, Math.round(R.revisados * 0.25));
+  R.frenado = pend.length > limite || R.sinLeer > Math.max(20, R.revisados * 0.3);
+  if (R.frenado) R.sinOcultar = pend.length;
+  else {
+    for (let k = 0; k < pend.length; k += 10) {
+      await Promise.all(pend.slice(k, k + 10).map(async x => {
+        await db(`productos?id=eq.${x.id}`, { method: 'PATCH', body: JSON.stringify({ stock: 0 }) });
+        S.ocultados[x.id] = x.stock;
+        if (x.tipo === 'perdida') R.perdidas.push({ id: x.id, nombre: x.nombre, coste: x.coste, tuPrecio: x.tuPrecio });
+        else R.agotados.push({ id: x.id, nombre: x.nombre, retirado: x.retirado });
+      }).map(pr => pr.catch(() => {})));
+    }
+  }
   S.ultima = { fecha: new Date().toISOString(), total: lista.length, ...R };
   delete S.enCurso; delete S.ronda; delete S.cursor;
   await guardar();
   const partes = [];
+  if (R.frenado) partes.push(`⚠️ ${R.sinOcultar} productos parecían agotados y ${R.sinLeer} no se han podido leer: puede que el proveedor esté bloqueando la revisión. No se ha ocultado nada`);
   if (R.agotados.length) partes.push(`${R.agotados.length} agotado${R.agotados.length > 1 ? 's' : ''} en el proveedor (ocultos)`);
   if (R.perdidas.length) partes.push(`${R.perdidas.length} con el proveedor más caro que tú (ocultos)`);
   if (R.precios.length) partes.push(`${R.precios.length} cambio${R.precios.length > 1 ? 's' : ''} de precio`);
