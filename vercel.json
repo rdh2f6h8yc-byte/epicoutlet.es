@@ -4,6 +4,9 @@
   "functions": {
     "api/pagina.js": {
       "includeFiles": "index.html"
+    },
+    "api/sincronizar.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -117,5 +120,11 @@
         "hostname": "cdn.shopify.com"
       }
     ]
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/sincronizar",
+      "schedule": "0 5 * * *"
+    }
+  ]
 }
