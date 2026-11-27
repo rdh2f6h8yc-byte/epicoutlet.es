@@ -334,11 +334,14 @@ async function comprobarAhora() {
 
 function pintarLista() {
   const q = busca.toLowerCase();
-  const list = PRODS.filter(p => (filtro === 'todos' || (filtro === 'pub' ? p.publicado : !p.publicado)) && (!q || p.nombre.toLowerCase().includes(q)));
-  const nPub = PRODS.filter(p => p.publicado).length;
+  const enVenta = p => p.publicado && p.stock > 0, agotado = p => p.publicado && !(p.stock > 0);
+  const okFiltro = p => filtro === 'todos' || (filtro === 'pub' ? enVenta(p) : filtro === 'ago' ? agotado(p) : !p.publicado);
+  const list = PRODS.filter(p => okFiltro(p) && (!q || p.nombre.toLowerCase().includes(q)));
+  const nAgo = PRODS.filter(agotado).length;
+  const nPub = PRODS.filter(p => p.publicado && p.stock > 0).length;
   $('#app').innerHTML = `
     <div class="row" style="justify-content:space-between;margin-bottom:12px">
-      <div><h1 style="font-size:26px">Productos</h1><div class="small">${PRODS.length} en total · ${nPub} publicados</div></div>
+      <div><h1 style="font-size:26px">Productos</h1><div class="small">${PRODS.length} en total · ${nPub} a la venta${nAgo ? ` · <a href="#" id="verAgo" style="font-weight:700">${nAgo} agotados</a>` : ''}</div></div>
       <button class="btn b-brand" id="nuevo">+ Nuevo</button>
     </div>
     ${tarjetaSync()}
@@ -346,7 +349,7 @@ function pintarLista() {
     <div class="card" style="padding:12px 18px">
       <div class="row" style="margin-bottom:6px">
         <input class="in" id="busca" placeholder="Buscar producto…" value="${esc(busca)}" style="flex:1 1 200px">
-        <select class="in" id="filtro" style="flex:0 1 170px"><option value="todos">Todos</option><option value="pub">Publicados</option><option value="bor">Borradores</option></select>
+        <select class="in" id="filtro" style="flex:0 1 170px"><option value="todos">Todos</option><option value="pub">A la venta</option><option value="ago">Agotados (ocultos)</option><option value="bor">Borradores</option></select>
       </div>
       ${list.length ? list.map(p => `
         <div class="prow">
@@ -354,7 +357,7 @@ function pintarLista() {
           <div class="pinfo">
             <div class="pname">${esc(p.nombre)}</div>
             <div class="small">${eur(p.precio)} · stock ${p.stock} · ${esc(catNombre(p.categoria))}</div>
-            <span class="tag ${p.publicado ? 't-pub' : 't-bor'}">${p.publicado ? 'Publicado' : 'Borrador'}</span>
+            ${!p.publicado ? '<span class="tag t-bor">Borrador</span>' : p.stock > 0 ? '<span class="tag t-pub">A la venta</span>' : `<span class="tag" style="background:#FDECEC;color:#A12B2B">${SYNC && SYNC.ocultados && SYNC.ocultados[p.id] ? 'Agotado en el proveedor · oculto' : 'Agotado · oculto'}</span>`}
           </div>
           ${p.publicado ? `<a class="btn b-ghost" href="/producto/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" style="min-height:44px;padding:0 12px" aria-label="Ver en la tienda">↗</a>` : ''}
           <button class="btn b-ghost" data-edit="${p.id}" style="min-height:44px;padding:0 14px">Editar</button>
@@ -362,6 +365,7 @@ function pintarLista() {
     </div>`;
   $('#filtro').value = filtro;
   $('#filtro').onchange = e => { filtro = e.target.value; pintarLista(); };
+  if ($('#verAgo')) $('#verAgo').onclick = e => { e.preventDefault(); filtro = 'ago'; pintarLista(); };
   $('#busca').oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; pintarLista(); const i = $('#busca'); i.focus(); i.setSelectionRange(pos, pos); };
   $('#nuevo').onclick = () => abrirEditor(vacio());
   if ($('#syncYa')) $('#syncYa').onclick = comprobarAhora;
