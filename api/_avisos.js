@@ -27,7 +27,7 @@ function cifrar(texto, p256dh, auth, prueba) {
 function cabeceraVapid(endpoint, v) {
   const clave = crypto.createPrivateKey({ key: { kty: 'EC', crv: 'P-256', d: v.d, x: v.x, y: v.y }, format: 'jwk' });
   const cab = b64u(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
-  const sujeto = 'mailto:suportepicoutlet@gmail.com';
+  const sujeto = 'mailto:contacto@epicoutlet.es';
   const cuerpo = b64u(JSON.stringify({ aud: new URL(endpoint).origin, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: sujeto }));
   const firma = crypto.sign('sha256', Buffer.from(cab + '.' + cuerpo), { key: clave, dsaEncoding: 'ieee-p1363' });
   return `vapid t=${cab}.${cuerpo}.${b64u(firma)}, k=${v.pub}`;
