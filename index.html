@@ -689,7 +689,26 @@ function renderCatnav(active) {
    =========================================================== */
 let homeFilter = 'todo';
 let cdTimer;
-const dropTarget = Date.now() + ((1 * 24 + 20) * 60 + 12) * 60000; // [FECHA DEL PRÓXIMO DROP]
+// Drop de novedades: cada viernes a las 10:00 (hora de España). El viernes, durante 24 h, se anuncia como activo.
+const DROP = { dia: 5, hora: 10, duracionH: 24 };
+function horaMadrid(ms) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+}
+function estadoDrop(ahora = Date.now()) {
+  const off = horaMadrid(ahora) - ahora;                  // diferencia con la hora de España (cambia en verano)
+  const local = new Date(ahora + off);                    // «reloj de pared» de España
+  let dias = (DROP.dia - local.getUTCDay() + 7) % 7;
+  let inicio = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + dias, DROP.hora) - off;
+  if (inicio <= ahora) {
+    if (ahora - inicio < DROP.duracionH * 3600e3) return { activo: true, fin: inicio + DROP.duracionH * 3600e3 };
+    inicio += 7 * 864e5;
+  }
+  if (dias === 0 && inicio - ahora > 7 * 864e5) inicio -= 7 * 864e5;
+  // si en la semana del drop cambia el horario de verano, se corrige la hora exacta
+  inicio += (horaMadrid(inicio) - inicio) - off === 0 ? 0 : -((horaMadrid(inicio) - inicio) - off);
+  return { activo: false, inicio };
+}
 
 function pageHome() {
   const f = PRODUCTS.find(p => p.top && pct(p) > 0) || PRODUCTS[0];
@@ -720,7 +739,7 @@ function pageHome() {
       </div>
       <div class="hero-side">
         <div class="drop">
-          <div><div class="k">Próximo drop de novedades</div><div class="s">Nuevos lotes en cuanto llegan. Unidades limitadas.</div></div>
+          <div id="dropTxt"><div class="k">Próximo drop: el viernes a las 10:00</div><div class="s">Cada viernes, nuevos lotes de outlet. Unidades limitadas.</div></div>
           <div class="cd" id="cd"></div>
         </div>
         ${f ? `<a href="/producto/${f.id}" class="feat">
@@ -782,8 +801,13 @@ function pageHome() {
 
 function tickCountdown() {
   const el = $('#cd'); if (!el) return clearInterval(cdTimer);
-  const s = Math.max(0, Math.floor((dropTarget - Date.now()) / 1000));
+  const d = estadoDrop(), txt = $('#dropTxt');
+  if (d.activo) {
+    if (txt && !txt.dataset.on) { txt.dataset.on = '1'; txt.innerHTML = '<div class="k">🔥 ¡Drop de esta semana en marcha!</div><div class="s">Novedades recién llegadas. <a href="/coleccion/novedades" style="color:inherit;text-decoration:underline;font-weight:600">Verlas ahora</a></div>'; }
+  } else if (txt && txt.dataset.on) { delete txt.dataset.on; txt.innerHTML = '<div class="k">Próximo drop: el viernes a las 10:00</div><div class="s">Cada viernes, nuevos lotes de outlet. Unidades limitadas.</div>'; }
+  const s = Math.max(0, Math.floor(((d.activo ? d.fin : d.inicio) - Date.now()) / 1000));
   const pad = n => String(n).padStart(2, '0');
+  el.setAttribute('aria-label', d.activo ? 'Tiempo que queda del drop' : 'Tiempo para el próximo drop');
   el.innerHTML = [[Math.floor(s / 86400), 'días'], [Math.floor(s % 86400 / 3600), 'horas'], [Math.floor(s % 3600 / 60), 'min'], [s % 60, 'seg']]
     .map(([v, l]) => `<div><b>${pad(v)}</b><span>${l}</span></div>`).join('');
 }
