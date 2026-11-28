@@ -5,7 +5,8 @@ const RUTAS = {
   cupon: require('./_r-cupon.js'),
   factura: require('./_r-factura.js'),
   'estado-pagos': require('./_r-estado-pagos.js'),
-  cuenta: require('./_r-cuenta.js')
+  cuenta: require('./_r-cuenta.js'),
+  acceso: require('./_r-acceso.js')
 };
 module.exports = (req, res) => {
   const f = RUTAS[String((req.query && req.query.a) || '')];

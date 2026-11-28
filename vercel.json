@@ -11,6 +11,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/acceso",
+      "destination": "/api/tienda?a=acceso"
+    },
+    {
       "source": "/api/pedido",
       "destination": "/api/tienda?a=pedido"
     },
