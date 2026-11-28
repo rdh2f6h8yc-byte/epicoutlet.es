@@ -93,7 +93,7 @@ const r2 = n => Math.round(n * 100) / 100;
 const fechaES = d => new Date(d || Date.now()).toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric' });
 
 // Empresa emisora (Ajustes → Datos de facturación del panel; si faltan, los de la web)
-const EMPRESA_DEF = { nombre: 'EpicOutlet.es', titular: 'EPIC OUTLET SL', nif: 'Y0401739N', direccion: 'Zăvoi, Caraș-Severin, 327435, Rumanía', email: 'contacto@epicoutlet.es', web: 'www.epicoutlet.es' };
+const EMPRESA_DEF = { nombre: 'EpicOutlet.es', titular: 'EPIC OUTLET SL', nif: 'Y0401739N', direccion: 'C/ Valls d’Andorra, 58, 25005 Lérida, España', email: 'contacto@epicoutlet.es', web: 'www.epicoutlet.es' };
 
 /**
  * pedido: fila de la tabla pedidos.

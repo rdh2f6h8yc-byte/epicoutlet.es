@@ -307,7 +307,7 @@ async function trasCambioEstado(p, nuevo) {
 
 /* ---------- AJUSTES: facturación, beneficio, importación automática ---------- */
 function bloqueAjustesV2() {
-  const E = { titular: 'EPIC OUTLET SL', nif: 'Y0401739N', direccion: 'Zăvoi, Caraș-Severin, 327435, Rumanía', email: 'contacto@epicoutlet.es', web: 'www.epicoutlet.es', ...EMP };
+  const E = { titular: 'EPIC OUTLET SL', nif: 'Y0401739N', direccion: 'C/ Valls d’Andorra, 58, 25005 Lérida, España', email: 'contacto@epicoutlet.es', web: 'www.epicoutlet.es', ...EMP };
   return `
     <form class="card stack" id="fEmp" style="margin-top:14px">
       <h2 style="font-size:18px">Datos de facturación</h2>
