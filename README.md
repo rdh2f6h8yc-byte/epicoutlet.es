@@ -80,3 +80,20 @@ Notificaciones push propias (Web Push con VAPID, sin servicios externos):
 2. Ajustes → «Avisos de pedidos nuevos» → Activar notificaciones → Enviar aviso de prueba.
 
 Las claves VAPID se generan en el panel la primera vez y, junto con los dispositivos suscritos, se guardan en `ajustes` (clave `avisos`), que solo lee el administrador. El webhook de Stripe avisa de cada pedido pagado (`api/_avisos.js`); al tocar la notificación se abre el pedido. Service worker: `/sw-admin.js` (alcance `/admin`), manifiesto: `/admin.webmanifest`.
+
+## Versión 2: facturas, correos, reembolsos, cupones, clientes y cuentas
+
+Puesta en marcha (una vez):
+1. **SQL**: ejecuta `supabase/v2-cuentas-facturas.sql` en Supabase → SQL Editor.
+2. **Correos (Resend)**: añade el dominio `epicoutlet.es` en resend.com (registros DNS), crea una API key y ponla en Vercel como `RESEND_API_KEY` (Production). Opcional: `CORREO_REMITENTE` (por defecto `EpicOutlet.es <pedidos@epicoutlet.es>`).
+3. **Cuentas de clientes (Supabase → Authentication)**: URL Configuration → Site URL `https://www.epicoutlet.es` y Redirect URLs `https://www.epicoutlet.es/**`; SMTP Settings con Resend (`smtp.resend.com`, puerto 465, usuario `resend`, contraseña = API key).
+4. Panel → Ajustes → **Datos de facturación** (revisa el NIF).
+
+Qué hace:
+- Al pagarse un pedido: factura correlativa (serie EO), correo de confirmación con la factura en PDF, aviso al iPhone.
+- Panel → pedido: reembolso total o parcial en Stripe, factura rectificativa (serie R), correo al cliente; al marcar «enviado», correo con el seguimiento.
+- Panel → Resumen (ventas, beneficio real, pendientes, más vendidos), Clientes (con exportación CSV), Cupones (%, € o envío gratis; mínimo, caducidad y límite de usos), cambios en bloque en Productos.
+- Revisión diaria: avisos de pedidos atascados e importación automática de novedades de las colecciones marcadas.
+- Carritos abandonados: si el cliente acepta comunicaciones en Stripe, recibe un correo con el enlace para terminar la compra (una vez cada 7 días como máximo).
+- Tienda → Mi cuenta: acceso con enlace al correo, pedidos con seguimiento, facturas en PDF, datos y borrado de cuenta.
+- Funciones pequeñas agrupadas en `api/tienda.js` y `api/admin.js` (límite de funciones del plan gratuito de Vercel); las direcciones antiguas siguen funcionando por `vercel.json`.

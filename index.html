@@ -119,6 +119,7 @@ section.blk{padding:28px 0 48px}
 .shead h2{font-size:36px}
 .shead p{margin:6px 0 0;color:var(--muted);font-size:15px}
 .link{font-weight:600;font-size:15px;text-decoration:underline}
+button.link{background:none;border:0;padding:0;color:inherit;cursor:pointer}
 
 .catgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:14px}
 .cat{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 10px;border-radius:22px;font-weight:600;font-size:14px;text-align:center;transition:transform .2s,box-shadow .2s}
@@ -266,6 +267,29 @@ footer.site{background:var(--ink);color:#C9C9CF;padding:56px 0 32px}
 .ckt th,.ckt td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
 .ckt th{background:var(--soft)}
 @media (max-width:760px){.ck{bottom:84px;left:10px;right:10px;padding:16px}.ckt{font-size:13px}}
+.acc-box{max-width:520px;padding:20px 0 80px}
+.acc-box .note,.acc-wrap .note{margin-top:0}
+.acc-head h1{line-height:1.15}
+.acc-ped-top strong{display:block;font-size:16px}
+.acc-form{display:flex;gap:10px;flex-wrap:wrap}
+.acc-form .input{flex:1 1 240px;font-size:16px}
+.acc-wrap{max-width:760px;padding:16px 0 80px}
+.acc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.acc-ped{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:12px}
+.acc-ped-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.acc-est{font-size:13px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--brand-soft);color:var(--ink);white-space:nowrap}
+.acc-est.enviado,.acc-est.entregado{background:var(--ok-soft)}
+.acc-est.reembolsado{background:#EEE}
+.acc-pasos{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:14px 0 8px}
+.acc-pasos span{font-size:11px;color:var(--muted);border-top:4px solid #E5E5E9;padding-top:6px;text-align:center}
+.acc-pasos span.on{border-color:var(--brand);color:var(--ink);font-weight:600}
+.acc-items{display:grid;gap:8px;margin-top:10px}
+.acc-item{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center;font-size:14px;line-height:1.35}
+.acc-item img{width:44px;height:44px;object-fit:contain;border-radius:10px;background:var(--soft)}
+.acc-seg{margin-top:10px;font-size:14px;background:var(--soft);border-radius:12px;padding:10px 12px}
+.acc-lbl{display:grid;gap:6px;font-size:14px;font-weight:600}
+.acc-lbl .input{font-size:16px}
+.acc-vacio{background:#fff;border:1px dashed var(--line);border-radius:18px;padding:22px;text-align:center;display:grid;gap:12px;justify-items:center}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:14px 22px;border-radius:14px;font-size:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .3s;z-index:50;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px)}
 .toast{opacity:0;visibility:hidden;transition:transform .3s,opacity .3s,visibility .3s}
 .toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
@@ -868,7 +892,7 @@ function pageProduct(id) {
 }
 
 /* Carrito */
-let checkoutMsg = '', couponMsg = '', pagando = false, cupon = '';
+let checkoutMsg = '', couponMsg = '', pagando = false, cupon = '', cuponInfo = null;
 /* Sesión del panel (si has entrado en /admin en este navegador) */
 function tokenAdmin() {
   try {
@@ -884,7 +908,9 @@ function costeEnvio(sub) { if (ENVIO.precio == null) return null; return ENVIO.g
 function pageCart() {
   const lines = cart.map(l => ({ ...l, p: byId(l.id) })).filter(l => l.p);
   const sub = lines.reduce((a, l) => a + l.p.price * l.qty, 0);
-  const env = cupon === 'PRUEBA' ? 0 : costeEnvio(sub);
+  const cup = cupon && cupon !== 'PRUEBA' && cuponInfo && !(cuponInfo.minimo && sub < cuponInfo.minimo) ? cuponInfo : null;
+  const desc = !cup ? 0 : cup.tipo === 'pct' ? Math.round(sub * cup.valor) / 100 : cup.tipo === 'eur' ? Math.min(cup.valor, sub) : 0;
+  const env = cupon === 'PRUEBA' || (cup && cup.tipo === 'envio') ? 0 : costeEnvio(sub);
   const totalCupon = cupon === 'PRUEBA' ? 0 : null;
   const old = lines.reduce((a, l) => a + (pct(l.p) > 0 ? l.p.old : l.p.price) * l.qty, 0);
   const units = lines.reduce((a, l) => a + l.qty, 0);
@@ -911,7 +937,9 @@ function pageCart() {
         ${ENVIO.gratisDesde != null && env > 0 ? `<div class="note" style="margin-top:-6px">Te faltan ${eur(ENVIO.gratisDesde - sub)} para el envío gratis.</div>` : ''}
         ${old - sub > 0.009 ? `<div class="row saving"><span>Te ahorras</span><span>${eur(old - sub)}</span></div>` : ''}
         ${cupon === 'PRUEBA' ? `<div class="row saving"><span>Cupón PRUEBA</span><span>−${eur(sub)}</span></div>` : ''}
-        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(totalCupon != null ? 0 : sub + (env || 0))}</b></div>
+        ${cup ? `<div class="row saving"><span>Cupón ${esc(cupon)} <button class="link" data-quitarcupon style="font-size:13px;margin-left:6px">quitar</button></span><span>${cup.tipo === 'envio' ? 'Envío gratis' : '−' + eur(desc)}</span></div>` : ''}
+        ${cupon && cupon !== 'PRUEBA' && cuponInfo && !cup ? `<div class="note">El cupón ${esc(cupon)} es para compras desde ${eur(cuponInfo.minimo)}.</div>` : ''}
+        <div class="row total"><strong style="font-size:17px">Total</strong><b>${eur(totalCupon != null ? 0 : sub - desc + (env || 0))}</b></div>
         <div class="note" style="margin-top:-8px">IVA incluido.</div>
         <div style="display:flex;gap:8px"><label for="cupon" class="sr">Código de descuento</label><input id="cupon" class="input" style="min-height:48px;flex:1;min-width:0" placeholder="Código de descuento"><button class="btn btn-line" id="applyCoupon" style="min-height:48px;padding:0 16px;font-size:14px">Aplicar</button></div>
         ${couponMsg ? `<div class="msg" role="status">${couponMsg}</div>` : ''}
@@ -1106,20 +1134,175 @@ function pageInfo(key) {
   </div>`;
 }
 
-function pageAccount() {
-  return `<div class="wrap">
-    <nav class="crumbs" aria-label="Ruta"><a href="/">Inicio</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">Mi cuenta</span></nav>
-    <div class="doc" style="max-width:720px;padding:20px 0 72px">
-      <h1>Mi cuenta</h1>
-      <p class="lead">Muy pronto podrás crear tu cuenta para ver tus pedidos y comprar más rápido.</p>
-      <p>Mientras tanto, si tienes cualquier pregunta sobre un pedido, escríbenos y te ayudamos.</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-        <a href="/info/contacto" class="btn btn-dark">Contactar</a>
-        <a href="/carrito" class="btn btn-line">Ver mi carrito</a>
-      </div>
-    </div>
-  </div>`;
+/* ===========================================================
+   CUENTAS DE CLIENTES (Supabase Auth, entrar con un enlace al correo)
+   =========================================================== */
+const CK_SES = 'eo_cliente';
+let cuentaEstado = { cargando: false, pedidos: null, perfil: null, msg: '', enviado: '' };
+function leerSesion() { try { return JSON.parse(localStorage.getItem(CK_SES) || 'null'); } catch (e) { return null; } }
+function guardarSesion(s) { try { s ? localStorage.setItem(CK_SES, JSON.stringify(s)) : localStorage.removeItem(CK_SES); } catch (e) {} }
+const AUTH = () => (EO_CONFIG.supabaseUrl || '') + '/auth/v1';
+async function tokenCliente() {
+  const s = leerSesion(); if (!s || !s.access_token) return '';
+  if (s.expires_at && s.expires_at * 1000 > Date.now() + 60000) return s.access_token;
+  try {   // renovar la sesión
+    const r = await fetch(AUTH() + '/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: EO_CONFIG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) });
+    if (!r.ok) { guardarSesion(null); return ''; }
+    const j = await r.json();
+    guardarSesion({ access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Math.floor(Date.now() / 1000) + (j.expires_in || 3600), user: { id: j.user && j.user.id, email: j.user && j.user.email } });
+    return j.access_token;
+  } catch (e) { return s.access_token; }
 }
+// Al volver del enlace del correo: #access_token=…&refresh_token=…
+(function sesionDesdeEnlace() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('access_token') && h.get('refresh_token')) {
+    let user = {}; try { const pl = JSON.parse(atob(h.get('access_token').split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); user = { id: pl.sub, email: pl.email }; } catch (e) {}
+    guardarSesion({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: Number(h.get('expires_at')) || Math.floor(Date.now() / 1000) + Number(h.get('expires_in') || 3600), user });
+    history.replaceState(null, '', '/cuenta');
+  } else if (h.get('error_description') || h.get('error_code')) {
+    cuentaEstado.msg = h.get('error_code') === 'otp_expired' ? 'El enlace ha caducado o ya se ha usado. Pide uno nuevo.' : 'No se ha podido entrar: ' + (h.get('error_description') || '').replace(/\+/g, ' ');
+    history.replaceState(null, '', '/cuenta');
+  }
+})();
+async function restCliente(ruta, opt = {}) {
+  const t = await tokenCliente(); if (!t) throw new Error('sesion');
+  const r = await fetch(EO_CONFIG.supabaseUrl + '/rest/v1/' + ruta, { ...opt, headers: { apikey: EO_CONFIG.supabaseKey, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json', ...(opt.headers || {}) } });
+  if (r.status === 401) { guardarSesion(null); throw new Error('sesion'); }
+  const txt = await r.text(); let j = null; try { j = txt ? JSON.parse(txt) : null; } catch (e) {}
+  if (!r.ok) throw new Error((j && j.message) || 'Error ' + r.status);
+  return j;
+}
+async function cargarCuenta() {
+  if (cuentaEstado.cargando) return;
+  cuentaEstado.cargando = true;
+  try {
+    const s = leerSesion();
+    const [peds, perf] = await Promise.all([
+      restCliente('pedidos?select=id,numero,estado,total,creado,pagado,productos,transportista,seguimiento,factura,rectificativa,reembolsado,direccion&order=creado.desc&limit=100'),
+      restCliente(`perfiles?id=eq.${s.user.id}&select=nombre,telefono`).catch(() => [])
+    ]);
+    cuentaEstado.pedidos = peds || []; cuentaEstado.perfil = (perf || [])[0] || {};
+  } catch (e) { if (e.message !== 'sesion') cuentaEstado.msg = 'No se han podido cargar tus pedidos. Inténtalo más tarde.'; cuentaEstado.pedidos = cuentaEstado.pedidos || []; }
+  cuentaEstado.cargando = false;
+  if (location.pathname === '/cuenta') render(true);
+}
+const ESTADO_PED = { pagado: ['Pedido recibido', 'Lo estamos preparando'], pedido_proveedor: ['En preparación', 'Saldrá muy pronto'], enviado: ['Enviado', 'Va de camino'], entregado: ['Entregado', ''], reembolsado: ['Reembolsado', 'Te hemos devuelto el dinero'] };
+function urlSeg(transp, num) {
+  const t = String(transp || '').toLowerCase(), n = encodeURIComponent(num || ''); if (!num) return '';
+  if (/correos express/.test(t)) return `https://s.correosexpress.com/SeguimientoSinCP/search?shippingNumber=${n}`;
+  if (/correos/.test(t)) return `https://www.correos.es/es/es/herramientas/localizador/envios/detalle?tracking-number=${n}`;
+  if (/seur/.test(t)) return `https://www.seur.com/livetracking/?segOnlineIdentificador=${n}`;
+  if (/gls/.test(t)) return `https://mygls.gls-spain.es/e/${n}`;
+  if (/mrw/.test(t)) return `https://www.mrw.es/seguimiento_envios/MRW_resultados_consultas.asp?enviament=${n}`;
+  if (/dhl/.test(t)) return `https://www.dhl.com/es-es/home/tracking.html?tracking-id=${n}`;
+  if (/ups/.test(t)) return `https://www.ups.com/track?loc=es_ES&tracknum=${n}`;
+  if (/ctt/.test(t)) return `https://www.cttexpress.com/localizador-de-envios/?sc=${n}`;
+  return `https://www.google.com/search?q=${encodeURIComponent((transp || '') + ' ' + num)}`;
+}
+function pageAccount() {
+  const s = leerSesion();
+  const cab = `<nav class="crumbs" aria-label="Ruta"><a href="/">Inicio</a><span aria-hidden="true">/</span><span style="color:var(--ink);font-weight:500">Mi cuenta</span></nav>`;
+  if (!s || !s.access_token) {
+    return `<div class="wrap">${cab}
+      <div class="acc-box">
+        <h1 style="font-size:clamp(28px,4vw,38px);letter-spacing:-.02em">Mi cuenta</h1>
+        ${cuentaEstado.enviado ? `<div class="msg" role="status" style="background:var(--ok-soft)"><strong>Revisa tu correo.</strong> Te hemos enviado un enlace a <strong>${esc(cuentaEstado.enviado)}</strong> para entrar. Ábrelo en este mismo dispositivo. Si no lo ves, mira en spam o promociones.</div>
+          <button class="link" data-reenviar style="margin-top:12px">Usar otro correo</button>`
+        : `<p class="lead" style="margin:6px 0 18px">Entra con tu correo para ver tus pedidos, seguir los envíos y descargar tus facturas. Sin contraseñas: te mandamos un enlace.</p>
+        <form id="fLogin" class="acc-form" novalidate>
+          <label for="lEmail" class="sr">Tu correo</label>
+          <input id="lEmail" class="input" type="email" autocomplete="email" inputmode="email" placeholder="tu@correo.com" required>
+          <button class="btn btn-brand" type="submit" style="min-height:52px">Enviarme el enlace</button>
+        </form>
+        <p class="note" style="margin-top:12px">Si ya has comprado con ese correo, verás también esos pedidos. Al entrar aceptas la <a href="/info/privacidad" class="link" style="font-size:inherit">política de privacidad</a>.</p>`}
+        ${cuentaEstado.msg ? `<div class="msg" role="alert" style="margin-top:12px">${esc(cuentaEstado.msg)}</div>` : ''}
+      </div></div>`;
+  }
+  if (cuentaEstado.pedidos == null) { cargarCuenta(); return `<div class="wrap">${cab}<div class="acc-box"><h1>Mi cuenta</h1><p class="note">Cargando tus pedidos…</p></div></div>`; }
+  const P = cuentaEstado.pedidos, perf = cuentaEstado.perfil || {};
+  const tarjeta = p => {
+    const [tit, sub] = ESTADO_PED[p.estado] || [p.estado, ''];
+    const url = urlSeg(p.transportista, p.seguimiento);
+    const pasos = ['pagado', 'pedido_proveedor', 'enviado', 'entregado'], idx = pasos.indexOf(p.estado);
+    return `<article class="acc-ped">
+      <div class="acc-ped-top"><div><strong>Pedido #${p.numero}</strong><div class="note">${new Date(p.pagado || p.creado).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })} · ${eur(p.total)}</div></div>
+        <span class="acc-est ${p.estado}">${tit}</span></div>
+      ${idx >= 0 ? `<div class="acc-pasos" aria-label="Estado del pedido">${['Recibido', 'Preparando', 'Enviado', 'Entregado'].map((n, i) => `<span class="${i <= idx ? 'on' : ''}">${n}</span>`).join('')}</div>` : ''}
+      <div class="acc-items">${(p.productos || []).map(l => `<div class="acc-item">${l.imagen ? `<img src="${esc(l.imagen)}" alt="" loading="lazy">` : '<span></span>'}<div><div>${esc(l.nombre)}</div><div class="note">${l.cantidad} × ${eur(l.precio)}</div></div></div>`).join('')}</div>
+      ${p.seguimiento ? `<div class="acc-seg">${p.transportista ? esc(p.transportista) + ' · ' : ''}Seguimiento: <strong>${esc(p.seguimiento)}</strong> ${url ? `<a href="${url}" target="_blank" rel="noopener" class="link" style="font-size:inherit">Seguir envío ↗</a>` : ''}</div>` : sub ? `<div class="note">${sub}</div>` : ''}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        ${p.factura ? `<button class="btn btn-line" data-factura="${p.id}" style="min-height:42px;font-size:14px">Descargar factura</button>` : ''}
+        ${p.rectificativa ? `<button class="btn btn-line" data-factura="${p.id}" data-tipo="rectificativa" style="min-height:42px;font-size:14px">Factura rectificativa</button>` : ''}
+        <a href="/info/contacto" class="btn btn-line" style="min-height:42px;font-size:14px">Ayuda con este pedido</a>
+      </div>
+    </article>`;
+  };
+  return `<div class="wrap">${cab}
+    <div class="acc-wrap">
+      <div class="acc-head"><div><h1 style="font-size:clamp(28px,4vw,38px);letter-spacing:-.02em">Hola${perf.nombre ? ', ' + esc(perf.nombre.split(' ')[0]) : ''}</h1><div class="note">${esc(s.user && s.user.email || '')}</div></div>
+        <button class="btn btn-line" data-salir style="min-height:44px">Cerrar sesión</button></div>
+      ${cuentaEstado.msg ? `<div class="msg" role="status">${esc(cuentaEstado.msg)}</div>` : ''}
+      <h2 style="font-size:22px;margin:22px 0 12px">Mis pedidos</h2>
+      ${P.length ? P.map(tarjeta).join('') : `<div class="acc-vacio"><p>Todavía no tienes pedidos con este correo.</p><a href="/coleccion/novedades" class="btn btn-brand">Ver novedades</a></div>`}
+      <h2 style="font-size:22px;margin:30px 0 12px">Mis datos</h2>
+      <form id="fPerfil" class="acc-ped" style="display:grid;gap:12px">
+        <label class="acc-lbl">Nombre<input class="input" name="nombre" autocomplete="name" value="${esc(perf.nombre || '')}"></label>
+        <label class="acc-lbl">Teléfono<input class="input" name="telefono" type="tel" autocomplete="tel" value="${esc(perf.telefono || '')}"></label>
+        <button class="btn btn-dark" type="submit" style="justify-self:start;min-height:48px">Guardar</button>
+      </form>
+      <p class="note" style="margin-top:22px">¿Quieres borrar tu cuenta? <button class="link" data-borrarcuenta style="font-size:inherit">Borrar mi cuenta</button>. Tus pedidos se conservan el tiempo que exige la ley para las facturas.</p>
+    </div></div>`;
+}
+async function descargarFactura(id, tipo) {
+  try {
+    const t = await tokenCliente(); if (!t) throw new Error('Vuelve a entrar en tu cuenta');
+    const r = await fetch(`/api/factura?id=${encodeURIComponent(id)}&tipo=${tipo || 'factura'}`, { headers: { Authorization: 'Bearer ' + t } });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No disponible');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await r.blob()); a.download = (tipo === 'rectificativa' ? 'factura-rectificativa' : 'factura') + '-epicoutlet.pdf'; document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { alert(e.message); }
+}
+document.addEventListener('submit', async e => {
+  if (e.target.id === 'fLogin') {
+    e.preventDefault();
+    const email = $('#lEmail').value.trim().toLowerCase(), b = e.target.querySelector('button');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { cuentaEstado.msg = 'Escribe un correo válido.'; return render(true); }
+    b.disabled = true; b.textContent = 'Enviando…';
+    try {
+      const r = await fetch(`${AUTH()}/otp?redirect_to=${encodeURIComponent(location.origin + '/cuenta')}`, { method: 'POST', headers: { apikey: EO_CONFIG.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, create_user: true }) });
+      if (r.status === 429) throw new Error('Has pedido varios enlaces seguidos. Espera un minuto y vuelve a intentarlo.');
+      if (!r.ok) throw new Error('No se ha podido enviar el enlace. Inténtalo de nuevo en unos minutos.');
+      cuentaEstado.enviado = email; cuentaEstado.msg = '';
+    } catch (x) { cuentaEstado.msg = x.message; }
+    render(true);
+  }
+  if (e.target.id === 'fPerfil') {
+    e.preventDefault();
+    const f = new FormData(e.target), s = leerSesion();
+    const v = { id: s.user.id, nombre: String(f.get('nombre') || '').trim().slice(0, 120) || null, telefono: String(f.get('telefono') || '').trim().slice(0, 30) || null };
+    try { await restCliente('perfiles', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(v) }); cuentaEstado.perfil = v; cuentaEstado.msg = 'Datos guardados.'; }
+    catch (x) { cuentaEstado.msg = x.message === 'sesion' ? 'Tu sesión ha caducado. Vuelve a entrar.' : 'No se han podido guardar tus datos.'; }
+    render(true); window.scrollTo(0, 0);
+  }
+});
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-salir],[data-reenviar],[data-factura],[data-borrarcuenta]'); if (!t) return;
+  if ('salir' in t.dataset) {
+    const tk = await tokenCliente();
+    if (tk) fetch(AUTH() + '/logout', { method: 'POST', headers: { apikey: EO_CONFIG.supabaseKey, Authorization: 'Bearer ' + tk } }).catch(() => {});
+    guardarSesion(null); cuentaEstado = { cargando: false, pedidos: null, perfil: null, msg: '', enviado: '' }; render(true);
+  } else if ('reenviar' in t.dataset) { cuentaEstado.enviado = ''; render(true); }
+  else if ('factura' in t.dataset) descargarFactura(t.dataset.factura, t.dataset.tipo);
+  else if ('borrarcuenta' in t.dataset) {
+    if (!confirm('¿Seguro que quieres borrar tu cuenta? No se puede deshacer.')) return;
+    try {
+      const tk = await tokenCliente();
+      const r = await fetch('/api/cuenta', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk }, body: JSON.stringify({ accion: 'borrar' }) });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Error');
+      guardarSesion(null); cuentaEstado = { cargando: false, pedidos: null, perfil: null, msg: 'Tu cuenta se ha borrado.', enviado: '' }; render(true);
+    } catch (x) { alert('No se ha podido borrar la cuenta: ' + x.message); }
+  }
+});
 
 /* ---------- Pago ---------- */
 async function finalizarCompra() {
@@ -1128,7 +1311,8 @@ async function finalizarCompra() {
   evento('begin_checkout', { currency: 'EUR', items: cart.map(l => { const p = byId(l.id); return p ? itemGA(p, l.qty) : null; }).filter(Boolean) });
   try {
     const headers = { 'Content-Type': 'application/json' };
-    if (cupon) headers.Authorization = 'Bearer ' + tokenAdmin();
+    if (cupon === 'PRUEBA') headers.Authorization = 'Bearer ' + tokenAdmin();
+    else { const tc = await tokenCliente(); if (tc) headers.Authorization = 'Bearer ' + tc; }
     const r = await fetch('/api/checkout', { method: 'POST', headers, body: JSON.stringify({ items: cart.map(l => ({ id: l.id, qty: l.qty })), cupon: cupon || undefined }) });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.url) { location.href = d.url; return; }
@@ -1141,7 +1325,7 @@ async function finalizarCompra() {
       }
       store.set(cart); updateBadges();
     }
-    if (d.cupon === false) { cupon = ''; couponMsg = ''; }
+    if (d.cupon === false) { cupon = ''; cuponInfo = null; couponMsg = ''; }
     checkoutMsg = esc(d.error || 'No se ha podido iniciar el pago. Inténtalo de nuevo.');
   } catch (e) { checkoutMsg = 'No hay conexión. Inténtalo de nuevo.'; }
   pagando = false; render(true);
@@ -1149,7 +1333,7 @@ async function finalizarCompra() {
 
 function pageGracias(sesion) {
   if (sesion && cart.length) { cart = []; store.set(cart); updateBadges(); }
-  if (sesion) cupon = '';
+  if (sesion) { cupon = ''; cuponInfo = null; }
   if (sesion) {
     fetch('/api/pedido?s=' + encodeURIComponent(sesion)).then(r => r.ok ? r.json() : null).then(p => {
       const el = $('#numPedido'); if (p && el) el.innerHTML = `Número de pedido: <strong>#${p.numero}</strong>`;
@@ -1161,10 +1345,11 @@ function pageGracias(sesion) {
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1D6B3A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></div>
     <h1 style="font-size:clamp(30px,4vw,42px)">¡Gracias por tu compra!</h1>
     <p id="numPedido" style="color:var(--ink2);font-size:17px;margin:14px 0 6px">${sesion ? 'Confirmando tu pedido…' : ''}</p>
-    <p style="color:var(--muted);line-height:1.6">Te hemos enviado el justificante de pago por correo. Recibirás tu pedido en <strong>1 a 3 días laborables</strong> y te avisaremos con el número de seguimiento cuando salga.</p>
+    <p style="color:var(--muted);line-height:1.6">Te hemos enviado la confirmación y la factura por correo. Recibirás tu pedido en <strong>1 a 3 días laborables</strong> y te avisaremos con el número de seguimiento cuando salga.</p>
+    <p style="color:var(--muted);line-height:1.6">En <a href="/cuenta" class="link" style="font-size:inherit">Mi cuenta</a> puedes seguir el pedido y descargar la factura: entra con el mismo correo, sin contraseña.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px">
       <a href="/" class="btn btn-brand">Seguir comprando</a>
-      <a href="/info/contacto" class="btn btn-line">¿Alguna duda?</a>
+      <a href="/cuenta" class="btn btn-line">Ver mi pedido</a>
     </div>
   </div>`;
 }
@@ -1319,11 +1504,20 @@ document.addEventListener('click', e => {
   else if (d.cq) { const l = cart.find(i => String(i.id) === d.cq); const p = byId(l.id); l.qty = Math.max(1, Math.min(p.stock, l.qty + +d.d)); store.set(cart); render(true); }
   else if (d.del) { cart = cart.filter(i => String(i.id) !== d.del); store.set(cart); render(true); }
   else if (t.id === 'checkout') { finalizarCompra(); }
+  else if ('quitarcupon' in d) { cupon = ''; cuponInfo = null; couponMsg = ''; render(true); }
   else if (t.id === 'applyCoupon') {
     const v = $('#cupon').value.trim().toUpperCase();
     if (!v) couponMsg = 'Escribe un código de descuento.';
-    else if (v === 'PRUEBA' && tokenAdmin()) { cupon = 'PRUEBA'; couponMsg = 'Cupón de prueba aplicado: producto y envío gratis. Solo funciona con tu sesión del panel abierta.'; }
-    else { cupon = ''; couponMsg = `El código «${esc(v)}» no es válido o ha caducado.`; }
+    else if (v === 'PRUEBA' && tokenAdmin()) { cupon = 'PRUEBA'; cuponInfo = null; couponMsg = 'Cupón de prueba aplicado: producto y envío gratis. Solo funciona con tu sesión del panel abierta.'; }
+    else {
+      const sub = cart.reduce((a, l) => { const p = byId(l.id); return a + (p ? p.price * l.qty : 0); }, 0);
+      t.disabled = true;
+      fetch(`/api/cupon?c=${encodeURIComponent(v)}&s=${sub.toFixed(2)}`).then(r => r.json()).then(j => {
+        if (j.ok) { cupon = j.codigo; cuponInfo = j; couponMsg = `Cupón ${esc(j.codigo)} aplicado: ${esc(j.texto)}.`; }
+        else { cupon = ''; cuponInfo = null; couponMsg = esc(j.error || `El código «${v}» no es válido.`); }
+      }).catch(() => { couponMsg = 'No se ha podido comprobar el código. Inténtalo de nuevo.'; }).finally(() => render(true));
+      return;
+    }
     render(true);
   }
   else if (t.id === 'toggleFilters') { const f = $('#filters'); const open = f.classList.toggle('open'); t.setAttribute('aria-expanded', open); }

@@ -11,6 +11,46 @@
   },
   "rewrites": [
     {
+      "source": "/api/pedido",
+      "destination": "/api/tienda?a=pedido"
+    },
+    {
+      "source": "/api/cupon",
+      "destination": "/api/tienda?a=cupon"
+    },
+    {
+      "source": "/api/factura",
+      "destination": "/api/tienda?a=factura"
+    },
+    {
+      "source": "/api/estado-pagos",
+      "destination": "/api/tienda?a=estado-pagos"
+    },
+    {
+      "source": "/api/cuenta",
+      "destination": "/api/tienda?a=cuenta"
+    },
+    {
+      "source": "/api/aviso-prueba",
+      "destination": "/api/admin?a=aviso-prueba"
+    },
+    {
+      "source": "/api/indexnow",
+      "destination": "/api/admin?a=indexnow"
+    },
+    {
+      "source": "/api/admin-pedido",
+      "destination": "/api/admin?a=admin-pedido"
+    },
+    {
+      "source": "/api/imagen",
+      "destination": "/api/admin?a=imagen"
+    },
+    {
+      "source": "/api/leer",
+      "destination": "/api/admin?a=leer"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },

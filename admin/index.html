@@ -92,8 +92,11 @@ ol.steps li{margin-bottom:8px}
   <button id="salir" hidden>Salir</button>
 </div>
 <nav class="tabs" id="tabs" hidden>
+  <button data-v="resumen">Resumen</button>
   <button data-v="pedidos" id="tabPedidos">Pedidos</button>
   <button data-v="lista">Productos</button>
+  <button data-v="clientes">Clientes</button>
+  <button data-v="cupones">Cupones</button>
   <button data-v="importar">Importar</button>
   <button data-v="atajo">Atajo iPhone</button>
   <button data-v="ajustes">Ajustes</button>
@@ -103,6 +106,7 @@ ol.steps li{margin-bottom:8px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
+<script src="/admin/v2.js?v=1"></script>
 <script>
 /* ===========================================================
    Panel de EpicOutlet.es
@@ -191,7 +195,7 @@ const fmtPrecio = n => n == null ? '' : n.toFixed(2).replace('.', ',');
 const ivaTxt = () => AJ.costeConIva ? 'coste con IVA' : `+ IVA ${AJ.iva} %`;
 
 let PEDIDOS = [], pedidoAbierto = null, filtroPed = 'gestionar';
-let sb = null, session = null, vista = 'lista', PRODS = [], PRIV = {}, ed = null, filtro = 'todos', busca = '';
+let sb = null, session = null, vista = 'resumen', PRODS = [], PRIV = {}, ed = null, filtro = 'todos', busca = '';
 
 /* Producto que llega desde el atajo del iPhone */
 (function leerHash() {
@@ -259,7 +263,7 @@ async function entrar() {
   if (error || ok !== true) { await sb.auth.signOut(); return pintarLogin('Este usuario no tiene permiso de administrador. Añade su correo a la tabla «admins» en Supabase.'); }
   $('#tabs').hidden = false; $('#salir').hidden = false;
   swPanel();
-  await Promise.all([cargar(), cargarAjustes(), cargarPedidos()]);
+  await Promise.all([cargar(), cargarAjustes(), cargarPedidos(), cargarV2()]);
   if (PEDIDOS.some(p => p.estado === 'pagado')) vista = 'pedidos';
   const pend = sessionStorage.getItem('eo_pend'), err = sessionStorage.getItem('eo_err'), lista = sessionStorage.getItem('eo_lista'), pedAv = sessionStorage.getItem('eo_pedido');
   if (sessionStorage.getItem('eo_sync')) { sessionStorage.removeItem('eo_sync'); syncAbierto = true; vista = 'lista'; }
@@ -295,6 +299,9 @@ function pintar() {
   if (vista === 'ajustes') return pintarAjustes();
   if (vista === 'lote' && LOTE) return pintarLote();
   if (vista === 'pedidos') return pedidoAbierto ? pintarPedido() : pintarPedidos();
+  if (vista === 'resumen') return pintarResumen();
+  if (vista === 'clientes') return pintarClientes();
+  if (vista === 'cupones') return pintarCupones();
   pintarLista();
 }
 
@@ -352,8 +359,10 @@ function pintarLista() {
         <input class="in" id="busca" placeholder="Buscar producto…" value="${esc(busca)}" style="flex:1 1 200px">
         <select class="in" id="filtro" style="flex:0 1 170px"><option value="todos">Todos</option><option value="pub">A la venta</option><option value="ago">Agotados (ocultos)</option><option value="bor">Borradores</option></select>
       </div>
+      ${list.length ? barraSeleccion(list) : ''}
       ${list.length ? list.map(p => `
         <div class="prow">
+          <input type="checkbox" data-sel="${p.id}" ${SEL.has(p.id) ? 'checked' : ''} aria-label="Seleccionar" style="width:20px;height:20px;flex:none;accent-color:var(--brand)">
           ${p.imagenes && p.imagenes[0] ? `<img class="thumb" src="${esc(p.imagenes[0])}" alt="" loading="lazy">` : '<div class="thumb">Sin foto</div>'}
           <div class="pinfo">
             <div class="pname">${esc(p.nombre)}</div>
@@ -369,6 +378,7 @@ function pintarLista() {
   if ($('#verAgo')) $('#verAgo').onclick = e => { e.preventDefault(); filtro = 'ago'; pintarLista(); };
   $('#busca').oninput = e => { busca = e.target.value; const pos = e.target.selectionStart; pintarLista(); const i = $('#busca'); i.focus(); i.setSelectionRange(pos, pos); };
   $('#nuevo').onclick = () => abrirEditor(vacio());
+  activarSeleccion(list);
   if ($('#syncYa')) $('#syncYa').onclick = comprobarAhora;
   if ($('#syncVer')) $('#syncVer').onclick = e => { e.preventDefault(); syncAbierto = !syncAbierto; pintar(); };
   if ($('#irAjustes')) $('#irAjustes').onclick = ev => { ev.preventDefault(); vista = 'ajustes'; pintar(); };
@@ -624,8 +634,9 @@ function pintarPedido() {
         ${p.estado === 'enviado' ? '<button class="btn b-brand" data-est="entregado">Marcar como entregado</button>' : ''}
         <button class="btn b-line" data-est="">Guardar</button>
       </div>
-      ${['enviado', 'entregado'].includes(p.estado) && p.cliente_email ? `<a class="btn b-dark" id="avisar" href="${mailSeguimiento(p)}">Avisar al cliente por correo</a>` : ''}
+      ${p.estado === 'pedido_proveedor' && p.cliente_email ? '<label class="check"><input type="checkbox" id="avEnv" checked>Al marcarlo como enviado, mandar al cliente el correo con el seguimiento</label>' : ''}
     </div>
+    ${bloqueFacturaCorreos(p)}
 
     <div class="card stack">
       <h2 style="font-size:18px">Resumen</h2>
@@ -634,17 +645,15 @@ function pintarPedido() {
       <div class="row" style="justify-content:space-between"><span class="muted">Coste en el proveedor</span><span>${isNaN(coste) ? '—' : eur(coste)}</span></div>
       ${beneficio != null ? `<div class="row" style="justify-content:space-between"><strong>Beneficio aprox. (sin IVA, sin envío del proveedor ni comisión de Stripe)</strong><strong style="color:${beneficio >= 0 ? 'var(--ok)' : 'var(--err)'}">${eur(beneficio)}</strong></div>` : ''}
     </div>
-    ${!['cancelado', 'reembolsado'].includes(p.estado) ? `<div class="card stack">
-      <p class="small" style="margin:0">Si no puedes servir el pedido (por ejemplo, el proveedor lo ha agotado), devuelve el dinero desde Stripe y márcalo aquí.</p>
-      <button class="btn b-danger" data-est="reembolsado">Marcar como reembolsado</button>
-    </div>` : ''}`;
+    ${bloqueReembolso(p)}`;
 
   $('#volverPed').onclick = () => { pedidoAbierto = null; pintar(); };
+  activarBloquesPedido(p);
   $('#copiarDir').onclick = () => copiar(dir, 'Dirección copiada');
   if ($('#copiarMail')) $('#copiarMail').onclick = () => copiar(p.cliente_email, 'Correo copiado');
   document.querySelectorAll('[data-est]').forEach(b => b.onclick = async () => {
     const nuevo = b.dataset.est;
-    if (nuevo === 'reembolsado' && !confirm('¿Has devuelto ya el dinero en Stripe? El pedido quedará como reembolsado.')) return;
+    if (nuevo === 'reembolsado' && !confirm('¿Has devuelto ya el dinero desde el panel de Stripe? El pedido solo se marcará como reembolsado (sin devolver nada ni avisar al cliente).')) return;
     const cambios = { ref_proveedor: $('#refProv').value.trim() || null, transportista: $('#transp').value.trim() || null, seguimiento: $('#seguim').value.trim() || null, notas: $('#notasPed').value.trim() || null };
     if (nuevo) cambios.estado = nuevo;
     if (nuevo === 'enviado' && !cambios.seguimiento && !confirm('No has puesto número de seguimiento. ¿Marcar como enviado igualmente?')) return;
@@ -652,6 +661,7 @@ function pintarPedido() {
     const { error } = await sb.from('pedidos').update(cambios).eq('id', p.id);
     if (error) { b.disabled = false; return toast('No se ha podido guardar'); }
     Object.assign(p, cambios);
+    if (nuevo) await trasCambioEstado(p, nuevo);
     await cargarPedidos(); pintarPedido();
     toast(nuevo ? 'Pedido actualizado' : 'Guardado');
   });
@@ -823,8 +833,10 @@ function pintarAjustes() {
       <button class="btn b-line" id="recalc" ${conCoste.length ? '' : 'disabled'}>Recalcular ${conCoste.length} precios</button>
       <div id="recMsg"></div>
     </div>
-    <div class="card stack" style="margin-top:14px" id="avisos"></div>`;
+    <div class="card stack" style="margin-top:14px" id="avisos"></div>
+    ${bloqueAjustesV2()}`;
   pintarAvisos();
+  activarAjustesV2();
   const form = $('#aj');
   const leer = () => {
     const f = new FormData(form);
@@ -961,6 +973,7 @@ function pintarLote() {
       <label class="check"><input type="checkbox" id="oCopiar" ${o.copiar ? 'checked' : ''}>Copiar las fotos a mi tienda (más lento, pero no dependes del proveedor)</label>
       <label class="check"><input type="checkbox" id="oPub" ${o.publicar ? 'checked' : ''}>Publicarlos directamente (si no, quedan como borrador)</label>
       <label class="check"><input type="checkbox" id="oAgot" ${o.agotados ? 'checked' : ''}>Mostrar también los agotados</label>
+      ${bloqueAutoLote()}
       <div class="small">Precio de venta: coste + ${esc(AJ.margen)} % ${esc(ivaTxt())}${AJ.usarPvp ? ' · PVP del proveedor como precio tachado' : ''}. <a href="#" id="irAj" style="font-weight:600">Cambiar en Ajustes</a></div>
     </div>
     <div id="prog"></div>
@@ -989,6 +1002,7 @@ function pintarLote() {
 
   const re = () => { const y = window.scrollY; pintarLote(); window.scrollTo(0, y); };
   $('#cerrarLote').onclick = () => { LOTE = null; vista = 'lista'; pintar(); };
+  activarAutoLote();
   $('#irAj').onclick = e => { e.preventDefault(); vista = 'ajustes'; pintar(); };
   $('#oCat').onchange = e => { if (e.target.value === '__nueva') { const n = pedirColeccion(); if (n) o.cat = n; } else o.cat = e.target.value; re(); };
   $('#oEst').onchange = e => { o.estado = e.target.value; re(); };

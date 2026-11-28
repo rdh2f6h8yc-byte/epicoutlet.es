@@ -6,7 +6,7 @@
 // Trabaja por tandas: si no le da tiempo, se vuelve a llamar a sí mismo para seguir.
 const crypto = require('crypto');
 const { db, claveSupabase } = require('./_srv.js');
-const { UA, esAdmin, extraerHTML, shopifyBase, desdeShopify } = require('./_util.js');
+const { UA, esAdmin, extraerHTML, shopifyBase, desdeShopify, estadoDe } = require('./_util.js');
 const { avisar } = require('./_avisos.js');
 
 const PRESUPUESTO_MS = 40000, PARALELO = 3;
@@ -74,6 +74,76 @@ async function leerProveedor(url) {
   return { disponible: d.disponible !== false, precio: d.precio };
 }
 
+/* ---------- Pedidos atascados: aviso al iPhone ---------- */
+async function revisarAtascados() {
+  try {
+    const h24 = new Date(Date.now() - 24 * 3600e3).toISOString(), d4 = new Date(Date.now() - 4 * 864e5).toISOString();
+    const sinPedir = await db(`pedidos?estado=eq.pagado&pagado=lt.${h24}&select=numero`);
+    const sinSeg = await db(`pedidos?estado=eq.pedido_proveedor&seguimiento=is.null&actualizado=lt.${d4}&select=numero`);
+    const partes = [];
+    if (sinPedir.length) partes.push(`${sinPedir.map(p => '#' + p.numero).join(', ')} sin pedir al proveedor desde hace más de 24 h`);
+    if (sinSeg.length) partes.push(`${sinSeg.map(p => '#' + p.numero).join(', ')} sin número de seguimiento desde hace más de 4 días`);
+    if (partes.length) await avisar({ titulo: '⚠️ Pedidos atascados', cuerpo: partes.join(' · '), url: '/admin', etiqueta: 'atascados' }, true);
+  } catch (e) {}
+}
+
+/* ---------- Importación automática de novedades ---------- */
+function precioCon(aj, coste, cat) {
+  const c = Number(coste); if (!(c > 0)) return null;
+  const iva = Number(aj.iva) || 21;
+  const margen = aj.cat && aj.cat[cat] != null && aj.cat[cat] !== '' ? Number(aj.cat[cat]) : Number(aj.margen != null ? aj.margen : 40);
+  const x = (aj.costeConIva ? c / (1 + iva / 100) : c) * (1 + margen / 100) * (1 + iva / 100);
+  if (aj.redondeo === 'no') return Math.round(x * 100) / 100;
+  const fin = aj.redondeo === '99' ? 0.01 : 0.10;
+  let r = Math.ceil(x) - fin; if (r < x - 1e-9) r += 1;
+  return Math.round(r * 100) / 100;
+}
+const slugify = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'producto';
+async function importarNovedades(inicio) {
+  const fila = await db('ajustes?clave=in.(autoimport,precios)&select=clave,valor');
+  const auto = ((fila.find(x => x.clave === 'autoimport') || {}).valor || {}).lista || [];
+  const aj = (fila.find(x => x.clave === 'precios') || {}).valor || {};
+  if (!auto.length) return { nuevos: 0 };
+  const ya = new Set((await db('productos_privado?origen_url=not.is.null&select=origen_url&limit=50000')).map(x => x.origen_url));
+  let total = 0; const nombres = [];
+  for (const a of auto) {
+    let nuevos = 0;
+    try {
+      const u = new URL(a.url);
+      const r = await conTiempo(a.url, { headers: { 'User-Agent': UA } });
+      if (!r.ok) continue;
+      const sb = shopifyBase(await r.text(), a.url); if (!sb) continue;
+      const col = u.pathname.match(/\/collections\/([^/?#]+)/);
+      for (let pag = 1; pag <= 8 && Date.now() - inicio < PRESUPUESTO_MS && nuevos < 60; pag++) {
+        const rj = await pedirJS(`${col ? `${sb}/collections/${col[1]}` : sb}/products.json?limit=250&page=${pag}`);
+        if (!rj || !rj.ok) break;
+        const prods = ((await rj.json()).products || []);
+        for (const sp of prods) {
+          if (nuevos >= 60 || Date.now() - inicio > PRESUPUESTO_MS) break;
+          const d = desdeShopify(sp, u.origin);
+          if (ya.has(d.url) || !d.disponible || !d.precio) continue;
+          const precio = precioCon(aj, d.precio, a.coleccion); if (!precio) continue;
+          const fotos = (d.imagenes || []).slice(0, a.fotos || 4);
+          const estado = a.estado && a.estado !== 'auto' ? a.estado : (estadoDe(sp.tags, sp.title) || 'Nuevo');
+          const filaP = { slug: `${slugify(d.nombre)}-${Math.random().toString(36).slice(2, 6)}`, nombre: String(d.nombre).slice(0, 250), categoria: a.coleccion, estado, marca: d.marca || null, precio,
+            precio_anterior: aj.usarPvp !== false && d.pvp && d.pvp > precio ? d.pvp : null, stock: a.stock || 1, descripcion: d.descripcion || '', caracteristicas: d.caracteristicas || {},
+            imagenes: fotos, top: false, publicado: !!a.publicar && fotos.length > 0 };
+          try {
+            const [nuevo] = await db('productos', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(filaP) });
+            await db('productos_privado', { method: 'POST', body: JSON.stringify({ producto_id: nuevo.id, coste: d.precio, proveedor: u.hostname, origen_url: d.url, notas: d.sku ? `Ref. proveedor: ${d.sku}` : 'Importado automáticamente' }) });
+            ya.add(d.url); nuevos++; if (nombres.length < 5) nombres.push(filaP.nombre.slice(0, 50));
+          } catch (e) { console.error('autoimport', e.message); }
+        }
+        if (prods.length < 250) break;
+      }
+    } catch (e) { console.error('autoimport', e.message); }
+    a.ultima = new Date().toISOString(); a.nuevos = nuevos; total += nuevos;
+  }
+  await db('ajustes?clave=eq.autoimport', { method: 'PATCH', body: JSON.stringify({ valor: { lista: auto } }) }).catch(() => {});
+  if (total) await avisar({ titulo: `🆕 ${total} producto${total > 1 ? 's' : ''} nuevo${total > 1 ? 's' : ''} importado${total > 1 ? 's' : ''}`, cuerpo: nombres.join(' · ') + (total > nombres.length ? '…' : ''), url: '/admin', etiqueta: 'autoimport' }).catch(() => {});
+  return { nuevos: total };
+}
+
 const eur = n => Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
 module.exports = async (req, res) => {
@@ -82,6 +152,11 @@ module.exports = async (req, res) => {
   if (!quien) return res.status(401).json({ error: 'No autorizado' });
   const inicio = Date.now();
   const continuar = quien === 'interno';
+  if (continuar && req.query && req.query.fase === 'importar') {
+    const r = await importarNovedades(inicio).catch(e => ({ error: e.message }));
+    return res.status(200).json({ ok: true, importacion: r });
+  }
+  if (!continuar) await revisarAtascados();
 
   const fila = await db('ajustes?clave=eq.sync&select=valor').catch(() => []);
   let S = (fila && fila[0] && fila[0].valor) || {};
@@ -163,6 +238,11 @@ module.exports = async (req, res) => {
   if (R.perdidas.length) partes.push(`${R.perdidas.length} con el proveedor más caro que tú (ocultos)`);
   if (R.precios.length) partes.push(`${R.precios.length} cambio${R.precios.length > 1 ? 's' : ''} de precio`);
   if (R.vuelven.length) partes.push(`${R.vuelven.length} vuelve${R.vuelven.length > 1 ? 'n' : ''} a estar a la venta`);
+  // Después, la importación automática de novedades (en otra llamada, con su propio tiempo)
+  try {
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    await conTiempo(`https://${host}/api/sincronizar?fase=importar`, { method: 'POST', headers: { 'x-sync-clave': claveInterna() } }, 1500);
+  } catch (e) {}
   if (partes.length) await avisar({ titulo: '🔄 Stock de proveedores revisado', cuerpo: partes.join(' · ') + '. Toca para ver el detalle.', url: '/admin#sync', etiqueta: 'sync' }).catch(() => {});
   return res.status(200).json({ ok: true, terminado: true, ...S.ultima });
 };

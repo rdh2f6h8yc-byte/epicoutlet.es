@@ -2,7 +2,8 @@
 // En Stripe → Developers → Webhooks: añade esta dirección con los eventos
 // checkout.session.completed, checkout.session.async_payment_succeeded,
 // checkout.session.async_payment_failed y checkout.session.expired.
-const { db, firmaValida, leerCrudo, secretoWebhook } = require('./_srv.js');
+const { db, firmaValida, leerCrudo, secretoWebhook, sumarUsoCupon } = require('./_srv.js');
+const { correoConfirmacion, correoCarrito } = require('./_correo.js');
 const { avisar, avisoPedido } = require('./_avisos.js');
 
 async function marcarPagado(s) {
@@ -18,16 +19,28 @@ async function marcarPagado(s) {
     cliente_telefono: cli.phone || null,
     direccion: envio.address || cli.address || null,
     total: typeof s.amount_total === 'number' ? s.amount_total / 100 : undefined,
-    stripe_pago: s.payment_intent || null
+    stripe_pago: s.payment_intent || null,
+    stripe_session: s.id || undefined
   };
-  // Solo pasa de "pendiente" a "pagado" una vez, aunque Stripe repita el aviso
-  const hechos = await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(cambios) });
+  // Solo pasa a "pagado" una vez, aunque Stripe repita el aviso. También desde "cancelado":
+  // es el caso de un carrito recuperado (el cliente vuelve con el enlace del correo y paga).
+  const hechos = await db(`pedidos?id=eq.${id}&estado=in.(pendiente,cancelado)`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(cambios) });
   if (!hechos || !hechos.length) return;
-  await avisar(avisoPedido(hechos[0])).catch(() => {}); // aviso al iPhone (si falla, el pedido sigue igual)
-  if (String(hechos[0].notas || '').startsWith('PRUEBA')) return; // los pedidos de prueba no restan stock
-  for (const l of hechos[0].productos || []) {
-    if (l.producto_id) await db('rpc/descontar_stock', { method: 'POST', body: JSON.stringify({ p_id: l.producto_id, n: l.cantidad }) });
+  const p = hechos[0];
+  const prueba = String(p.notas || '').startsWith('PRUEBA');
+  if (!prueba) {
+    for (const l of p.productos || []) {
+      if (l.producto_id) await db('rpc/descontar_stock', { method: 'POST', body: JSON.stringify({ p_id: l.producto_id, n: l.cantidad }) });
+    }
+    // Factura con numeración correlativa (necesita el SQL de la versión 2)
+    try {
+      const num = await db('rpc/siguiente_factura', { method: 'POST', body: JSON.stringify({ p_serie: 'EO' }) });
+      if (num) { p.factura = num; p.factura_fecha = new Date().toISOString(); await db(`pedidos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ factura: p.factura, factura_fecha: p.factura_fecha }) }); }
+    } catch (e) { console.error('factura', e.message); }
+    if (p.cupon) await sumarUsoCupon(p.cupon);
   }
+  await avisar(avisoPedido(p)).catch(() => {});                         // aviso al iPhone
+  await correoConfirmacion(p).catch(e => console.error('correo', e.message)); // correo al cliente con la factura
 }
 
 // El cliente llegó a la pantalla de pago de Stripe pero no pagó (la cerró o el banco rechazó el pago)
@@ -44,7 +57,16 @@ async function marcarSinPago(id, s, motivo) {
   if (cli.email) cambios.cliente_email = cli.email;
   if (cli.name) cambios.cliente_nombre = cli.name;
   if (cli.phone) cambios.cliente_telefono = cli.phone;
-  await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', body: JSON.stringify(cambios) });
+  const hechos = await db(`pedidos?id=eq.${id}&estado=eq.pendiente`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(cambios) });
+  // Carrito abandonado: solo si el cliente aceptó comunicaciones y no le hemos escrito ya en los últimos 7 días
+  const url = s.after_expiration && s.after_expiration.recovery && s.after_expiration.recovery.url;
+  if (hechos && hechos.length && motivo === 'caducado' && url && cli.email && s.consent && s.consent.promotions === 'opt_in') {
+    try {
+      const desde = new Date(Date.now() - 7 * 864e5).toISOString();
+      const previos = await db(`pedidos?cliente_email=eq.${encodeURIComponent(cli.email)}&correos->>carrito=gte.${desde}&select=id`).catch(() => []);
+      if (!previos.length) await correoCarrito(hechos[0], url);
+    } catch (e) { console.error('carrito', e.message); }
+  }
 }
 
 module.exports = async (req, res) => {

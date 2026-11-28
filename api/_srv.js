@@ -71,4 +71,49 @@ async function leerEnvio() {
 
 const redondo = n => Math.round(n * 100) / 100;
 
-module.exports = { CFG, claveStripe, claveSupabase, secretoWebhook, db, stripe, form, firmaValida, leerCrudo, leerEnvio, pagosActivos, redondo };
+// Cliente con sesión iniciada en la tienda (cuentas de clientes de Supabase). Devuelve { id, email } o null.
+async function usuario(req) {
+  const h = req.headers.authorization || '';
+  const t = h.startsWith('Bearer ') ? h.slice(7) : '';
+  if (!t || t.length < 20) return null;
+  try {
+    const r = await fetch(CFG.supabaseUrl + '/auth/v1/user', { headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + t } });
+    if (!r.ok) return null;
+    const u = await r.json();
+    return u && u.id ? { id: u.id, email: u.email || null } : null;
+  } catch (e) { return null; }
+}
+
+// Cupones de descuento (Panel → Cupones). Se guardan en ajustes, clave 'cupones'.
+async function leerCupones() {
+  try { const r = await db('ajustes?clave=eq.cupones&select=valor'); return ((r && r[0] && r[0].valor) || {}).lista || []; } catch (e) { return []; }
+}
+async function validarCupon(codigo, subtotal) {
+  const c = String(codigo || '').trim().toUpperCase();
+  if (!c) return { ok: false, error: 'Escribe un código.' };
+  const cup = (await leerCupones()).find(x => String(x.codigo || '').toUpperCase() === c);
+  if (!cup || cup.activo === false) return { ok: false, error: 'Este código no existe o ya no está activo.' };
+  if (cup.caduca && new Date(cup.caduca + 'T23:59:59+01:00') < new Date()) return { ok: false, error: 'Este código ha caducado.' };
+  if (cup.max && Number(cup.usos || 0) >= Number(cup.max)) return { ok: false, error: 'Este código ya se ha usado el máximo de veces.' };
+  if (cup.minimo && subtotal < Number(cup.minimo)) return { ok: false, error: `Este código es para compras desde ${Number(cup.minimo).toFixed(2).replace('.', ',')} €.` };
+  let descuento = 0, envioGratis = false;
+  if (cup.tipo === 'envio') envioGratis = true;
+  else if (cup.tipo === 'eur') descuento = Math.min(Number(cup.valor) || 0, subtotal);
+  else descuento = subtotal * Math.min(Number(cup.valor) || 0, 90) / 100;
+  descuento = Math.round(descuento * 100) / 100;
+  const texto = cup.tipo === 'envio' ? 'Envío gratis' : cup.tipo === 'eur' ? `−${descuento.toFixed(2).replace('.', ',')} €` : `−${Number(cup.valor)} %`;
+  return { ok: true, codigo: c, descuento, envioGratis, texto, tipo: cup.tipo || 'pct', valor: Number(cup.valor) || 0, minimo: Number(cup.minimo) || 0 };
+}
+async function sumarUsoCupon(codigo) {
+  if (!codigo) return;
+  try {
+    const r = await db('ajustes?clave=eq.cupones&select=valor');
+    const v = (r && r[0] && r[0].valor) || { lista: [] };
+    const cup = (v.lista || []).find(x => String(x.codigo).toUpperCase() === String(codigo).toUpperCase());
+    if (!cup) return;
+    cup.usos = Number(cup.usos || 0) + 1;
+    await db('ajustes?clave=eq.cupones', { method: 'PATCH', body: JSON.stringify({ valor: v }) });
+  } catch (e) {}
+}
+
+module.exports = { CFG, claveStripe, claveSupabase, secretoWebhook, db, stripe, form, firmaValida, leerCrudo, leerEnvio, pagosActivos, redondo, usuario, validarCupon, sumarUsoCupon };
