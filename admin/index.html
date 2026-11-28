@@ -283,9 +283,19 @@ async function cargarPedidos() {
 }
 
 async function cargar() {
+  // Supabase devuelve como máximo 1000 filas por consulta: se leen de 1000 en 1000
+  const todas = async (consulta) => {
+    const out = [];
+    for (let off = 0; off < 100000; off += 1000) {
+      const { data, error } = await consulta().range(off, off + 999);
+      if (error) return { data: out.length ? out : null, error: out.length ? null : error };
+      out.push(...(data || [])); if (!data || data.length < 1000) break;
+    }
+    return { data: out, error: null };
+  };
   const [{ data: p, error: e1 }, { data: v }] = await Promise.all([
-    sb.from('productos').select('*').order('creado', { ascending: false }),
-    sb.from('productos_privado').select('*')
+    todas(() => sb.from('productos').select('*').order('creado', { ascending: false }).order('id')),
+    todas(() => sb.from('productos_privado').select('*').order('producto_id'))
   ]);
   if (e1) { toast('Error al cargar los productos'); PRODS = []; return; }
   PRODS = p || []; PRIV = {}; (v || []).forEach(x => PRIV[x.producto_id] = x);

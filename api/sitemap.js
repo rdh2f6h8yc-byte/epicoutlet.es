@@ -6,11 +6,20 @@ const slug = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '
 const xml = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 const dia = d => (d ? new Date(d) : new Date()).toISOString().slice(0, 10);
 
+async function publicas(ruta) {   // todas las filas, de 1000 en 1000 (límite de Supabase)
+  const out = [];
+  for (let off = 0; off < 100000; off += 1000) {
+    const r = await fetch(`${CFG.supabaseUrl}/rest/v1/${ruta}&limit=1000&offset=${off}`, { headers: { apikey: CFG.supabaseKey } });
+    if (!r.ok) break;
+    const parte = await r.json(); out.push(...parte); if (parte.length < 1000) break;
+  }
+  return out;
+}
+
 module.exports = async (req, res) => {
   let prods = [];
   try {
-    const r = await fetch(`${CFG.supabaseUrl}/rest/v1/productos?publicado=eq.true&stock=gt.0&select=slug,nombre,categoria,imagenes,estado,actualizado,top&order=actualizado.desc&limit=45000`, { headers: { apikey: CFG.supabaseKey } });
-    if (r.ok) prods = await r.json();
+    prods = await publicas('productos?publicado=eq.true&stock=gt.0&select=slug,nombre,categoria,imagenes,estado,actualizado,top&order=actualizado.desc,id');
   } catch (e) {}
   const ultima = prods[0] ? dia(prods[0].actualizado) : dia();
   const urls = [];

@@ -15,15 +15,25 @@ function gtinDe(c) {
   return '';
 }
 
+async function publicas(ruta) {   // todas las filas, de 1000 en 1000 (límite de Supabase)
+  const out = [];
+  for (let off = 0; off < 100000; off += 1000) {
+    const r = await fetch(`${CFG.supabaseUrl}/rest/v1/${ruta}&limit=1000&offset=${off}`, { headers: { apikey: CFG.supabaseKey } });
+    if (!r.ok) break;
+    const parte = await r.json(); out.push(...parte); if (parte.length < 1000) break;
+  }
+  return out;
+}
+
 module.exports = async (req, res) => {
   const h = { apikey: CFG.supabaseKey };
   let prods = [], envio = null;
   try {
-    const [r, a] = await Promise.all([
-      fetch(`${CFG.supabaseUrl}/rest/v1/productos?publicado=eq.true&stock=gt.0&select=id,slug,nombre,categoria,estado,marca,precio,precio_anterior,stock,descripcion,caracteristicas,imagenes&order=actualizado.desc&limit=10000`, { headers: h }),
+    const [pr, a] = await Promise.all([
+      publicas('productos?publicado=eq.true&stock=gt.0&select=id,slug,nombre,categoria,estado,marca,precio,precio_anterior,stock,descripcion,caracteristicas,imagenes&order=actualizado.desc,id'),
       fetch(`${CFG.supabaseUrl}/rest/v1/ajustes?clave=eq.envio&select=valor`, { headers: h })
     ]);
-    if (r.ok) prods = await r.json();
+    prods = pr;
     if (a.ok) { const v = ((await a.json())[0] || {}).valor; if (v && v.precio != null) envio = { precio: Number(v.precio), gratis: v.gratisDesde != null && v.gratisDesde !== '' ? Number(v.gratisDesde) : null }; }
   } catch (e) {}
 

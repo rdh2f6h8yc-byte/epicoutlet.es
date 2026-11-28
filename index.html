@@ -1556,9 +1556,12 @@ async function cargarProductos() {
     const campos = 'id,slug,nombre,categoria,estado,marca,precio,precio_anterior,stock,descripcion,caracteristicas,imagenes,top,creado';
     fetch(`${C.supabaseUrl}/rest/v1/ajustes?clave=eq.envio&select=valor`, { headers: { apikey: C.supabaseKey } })
       .then(r => r.ok ? r.json() : []).then(a => { const v = (a[0] || {}).valor; if (v && v.precio != null) { ENVIO = { precio: Number(v.precio) || 0, gratisDesde: v.gratisDesde != null && v.gratisDesde !== '' ? Number(v.gratisDesde) : null }; if (/carrito/.test(location.pathname)) render(true); } }).catch(() => {});
-    const r = await fetch(`${C.supabaseUrl}/rest/v1/productos?publicado=eq.true&stock=gt.0&select=${campos}&order=creado.desc`, { headers: { apikey: C.supabaseKey } });
-    if (!r.ok) throw new Error(r.status);
-    const rows = await r.json();
+    const rows = [];   // Supabase da como máximo 1000 por consulta: se piden de 1000 en 1000
+    for (let off = 0; off < 50000; off += 1000) {
+      const r = await fetch(`${C.supabaseUrl}/rest/v1/productos?publicado=eq.true&stock=gt.0&select=${campos}&order=creado.desc,id&limit=1000&offset=${off}`, { headers: { apikey: C.supabaseKey } });
+      if (!r.ok) { if (!off) throw new Error(r.status); break; }
+      const parte = await r.json(); rows.push(...parte); if (parte.length < 1000) break;
+    }
     const mes = 30 * 864e5;
     DESDE_BD = true;
     PRODUCTS = rows.map(x => ({

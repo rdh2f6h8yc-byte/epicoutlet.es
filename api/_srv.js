@@ -71,6 +71,17 @@ async function leerEnvio() {
 
 const redondo = n => Math.round(n * 100) / 100;
 
+// Supabase devuelve como máximo 1000 filas por consulta: esto las lee todas, de 1000 en 1000
+async function todas(ruta) {
+  const out = [];
+  for (let off = 0; off < 200000; off += 1000) {
+    const parte = await db(`${ruta}${ruta.includes('?') ? '&' : '?'}limit=1000&offset=${off}`);
+    out.push(...(parte || []));
+    if (!parte || parte.length < 1000) break;
+  }
+  return out;
+}
+
 // Cliente con sesión iniciada en la tienda (cuentas de clientes de Supabase). Devuelve { id, email } o null.
 async function usuario(req) {
   const h = req.headers.authorization || '';
@@ -116,4 +127,4 @@ async function sumarUsoCupon(codigo) {
   } catch (e) {}
 }
 
-module.exports = { CFG, claveStripe, claveSupabase, secretoWebhook, db, stripe, form, firmaValida, leerCrudo, leerEnvio, pagosActivos, redondo, usuario, validarCupon, sumarUsoCupon };
+module.exports = { todas, CFG, claveStripe, claveSupabase, secretoWebhook, db, stripe, form, firmaValida, leerCrudo, leerEnvio, pagosActivos, redondo, usuario, validarCupon, sumarUsoCupon };

@@ -5,7 +5,7 @@
 // Lo lanza el cron de Vercel (vercel.json) cada mañana, o el administrador con «Comprobar ahora».
 // Trabaja por tandas: si no le da tiempo, se vuelve a llamar a sí mismo para seguir.
 const crypto = require('crypto');
-const { db, claveSupabase } = require('./_srv.js');
+const { db, claveSupabase, todas } = require('./_srv.js');
 const { UA, esAdmin, extraerHTML, shopifyBase, desdeShopify, estadoDe } = require('./_util.js');
 const { avisar } = require('./_avisos.js');
 
@@ -104,7 +104,7 @@ async function importarNovedades(inicio) {
   const auto = ((fila.find(x => x.clave === 'autoimport') || {}).valor || {}).lista || [];
   const aj = (fila.find(x => x.clave === 'precios') || {}).valor || {};
   if (!auto.length) return { nuevos: 0 };
-  const ya = new Set((await db('productos_privado?origen_url=not.is.null&select=origen_url&limit=50000')).map(x => x.origen_url));
+  const ya = new Set((await todas('productos_privado?origen_url=not.is.null&select=origen_url&order=producto_id')).map(x => x.origen_url));
   let total = 0; const nombres = [];
   for (const a of auto) {
     let nuevos = 0;
@@ -167,7 +167,7 @@ module.exports = async (req, res) => {
   }
   const guardar = () => db('ajustes', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ clave: 'sync', valor: S }) });
 
-  const lista = await db('productos_privado?origen_url=not.is.null&select=producto_id,coste,origen_url,productos(id,nombre,precio,stock,publicado)&order=producto_id');
+  const lista = await todas('productos_privado?origen_url=not.is.null&select=producto_id,coste,origen_url,productos(id,nombre,precio,stock,publicado)&order=producto_id');
   const R = S.ronda;
   let i = S.cursor || 0;
 

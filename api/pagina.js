@@ -40,6 +40,11 @@ async function sb(ruta) {
   if (!r.ok) throw new Error('Supabase ' + r.status);
   return r.json();
 }
+async function sbTodas(ruta) {
+  const out = [];
+  for (let off = 0; off < 100000; off += 1000) { const parte = await sb(`${ruta}&limit=1000&offset=${off}`); out.push(...(parte || [])); if (!parte || parte.length < 1000) break; }
+  return out;
+}
 const CAMPOS = 'slug,nombre,categoria,estado,marca,precio,precio_anterior,stock,descripcion,caracteristicas,imagenes,top,creado,actualizado';
 
 function montar({ titulo, descripcion, url, imagen, robots = 'index, follow, max-image-preview:large', ogType = 'website', jsonld = [], cuerpo = '', estado = 200 }) {
@@ -114,7 +119,7 @@ async function paginaProducto(clave) {
 }
 
 async function paginaColeccion(clave) {
-  const todos = await sb(`productos?publicado=eq.true&stock=gt.0&select=slug,nombre,categoria,estado,precio,precio_anterior,imagenes,top,creado&order=creado.desc&limit=2000`);
+  const todos = await sbTodas(`productos?publicado=eq.true&stock=gt.0&select=slug,nombre,categoria,estado,precio,precio_anterior,imagenes,top,creado&order=creado.desc,id`);
   let lista, nombre;
   if (ESPECIALES[clave]) {
     nombre = ESPECIALES[clave];
