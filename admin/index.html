@@ -106,7 +106,7 @@ ol.steps li{margin-bottom:8px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
-<script src="/admin/v2.js?v=1"></script>
+<script src="/admin/v2.js?v=2"></script>
 <script>
 /* ===========================================================
    Panel de EpicOutlet.es
@@ -302,6 +302,7 @@ function pintar() {
   if (vista === 'resumen') return pintarResumen();
   if (vista === 'clientes') return pintarClientes();
   if (vista === 'cupones') return pintarCupones();
+  if (vista === 'enviarcupon') return pintarEnviarCupon();
   pintarLista();
 }
 
@@ -576,10 +577,12 @@ function pintarSinPago(p) {
     <div class="card stack">
       <h2 style="font-size:18px">Cliente</h2>
       ${p.cliente_email || p.cliente_nombre ? `<div>${esc(p.cliente_nombre || '')}${p.cliente_nombre && p.cliente_email ? '<br>' : ''}${esc(p.cliente_email || '')}${p.cliente_telefono ? '<br>' + esc(p.cliente_telefono) : ''}</div>
-        ${p.cliente_email ? `<a class="btn b-dark" href="mailto:${esc(p.cliente_email)}?subject=${asunto}&body=${cuerpo}">Escribirle para recuperar la venta</a>` : ''}`
+        ${p.cliente_email ? `<a class="btn b-dark" href="mailto:${esc(p.cliente_email)}?subject=${asunto}&body=${cuerpo}">Escribirle para recuperar la venta</a>
+        <button class="btn b-line" id="envCupSin" style="min-height:44px">🎁 Mandarle un código de descuento</button>` : ''}`
       : '<p class="muted" style="margin:0">No sabemos quién es: salió antes de escribir sus datos en la pantalla de pago.</p>'}
     </div>`;
   $('#volverPed').onclick = () => { pedidoAbierto = null; pintar(); };
+  if ($('#envCupSin')) $('#envCupSin').onclick = () => abrirEnviarCupon({ email: p.cliente_email, nombre: p.cliente_nombre, numero: p.numero, motivo: 'carrito' });
 }
 
 function pintarPedido() {

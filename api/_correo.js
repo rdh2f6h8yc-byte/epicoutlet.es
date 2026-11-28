@@ -10,7 +10,8 @@ const correoActivo = () => !!process.env.RESEND_API_KEY;
 
 const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const eur = n => (Number(n) || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
-const nombre1 = p => esc(String(p.cliente_nombre || '').trim().split(/\s+/)[0] || '').replace(/^./, c => c.toUpperCase());
+const capital = t => String(t || '').trim().split(/\s+/)[0].toLocaleLowerCase('es-ES').replace(/^./, c => c.toLocaleUpperCase('es-ES'));
+const nombre1 = p => esc(capital(p.cliente_nombre));
 
 async function enviar({ para, asunto, html, texto, adjuntos }) {
   if (!correoActivo()) return { ok: false, motivo: 'Falta RESEND_API_KEY en Vercel' };
@@ -150,4 +151,27 @@ async function correoCarrito(p, urlRecuperar) {
   return r;
 }
 
-module.exports = { enviar, correoActivo, correoConfirmacion, correoEnviado, correoReembolso, correoCarrito, empresaYIva, urlSeguimiento };
+// 5) Código de descuento enviado a mano desde el panel (disculpa, agradecimiento…)
+async function correoCupon({ para, nombre, cupon, mensaje, asunto }) {
+  const cond = [
+    cupon.tipo === 'envio' ? 'Envío gratis en tu próxima compra' : cupon.tipo === 'eur' ? `${eur(cupon.valor)} de descuento` : `${cupon.valor} % de descuento`,
+    cupon.minimo ? `en compras desde ${eur(cupon.minimo)}` : '',
+  ].filter(Boolean).join(' ');
+  const extra = [cupon.caduca ? `Válido hasta el ${new Date(cupon.caduca + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}` : '', cupon.max === 1 ? 'un solo uso' : ''].filter(Boolean).join(' · ');
+  const n = esc(capital(nombre));
+  const parrafos = String(mensaje || '').split(/\n{2,}|\n/).map(t => t.trim()).filter(Boolean).map(t => `<p style="font-size:15px;line-height:1.6;color:#3A3A40;margin:0 0 12px">${esc(t)}</p>`).join('');
+  const html = marco(asunto || 'Un regalo para ti', `
+    <h1 style="font-size:24px;margin:0 0 12px">${n ? 'Hola, ' + n : 'Hola'}</h1>
+    ${parrafos}
+    <div style="border:2px dashed #FF6A00;border-radius:14px;padding:18px;text-align:center;margin:18px 0;background:#FFF7F0">
+      <div style="font-size:13px;color:#6B6B73;margin-bottom:6px">Tu código</div>
+      <div style="font-size:28px;font-weight:800;letter-spacing:2px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#16161A">${esc(cupon.codigo)}</div>
+      <div style="font-size:14px;margin-top:8px;color:#16161A"><strong>${esc(cond)}</strong></div>
+      ${extra ? `<div style="font-size:12px;color:#6B6B73;margin-top:4px">${esc(extra)}</div>` : ''}
+    </div>
+    <p style="font-size:14px;color:#3A3A40;margin:0 0 18px">Escríbelo en el carrito, en «Código de descuento», antes de pagar.</p>
+    <p style="margin:0 0 8px">${boton(`${SITIO}/coleccion/novedades`, 'Ver las novedades')}</p>`);
+  return enviar({ para, asunto: asunto || 'Un código de descuento para ti · EpicOutlet.es', html, texto: `${mensaje || ''}\n\nTu código: ${cupon.codigo} (${cond}). ${extra}` });
+}
+
+module.exports = { correoCupon, enviar, correoActivo, correoConfirmacion, correoEnviado, correoReembolso, correoCarrito, empresaYIva, urlSeguimiento };

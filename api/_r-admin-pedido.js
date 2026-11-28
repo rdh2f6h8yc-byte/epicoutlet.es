@@ -4,13 +4,27 @@
 //   { id, accion: 'reenviar_confirmacion' }  → vuelve a mandar la confirmación con la factura
 const { db, stripe, redondo } = require('./_srv.js');
 const { esAdmin } = require('./_util.js');
-const { correoEnviado, correoReembolso, correoConfirmacion, correoActivo } = require('./_correo.js');
+const { correoEnviado, correoReembolso, correoConfirmacion, correoActivo, correoCupon } = require('./_correo.js');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
   if (!(await esAdmin(req))) return res.status(401).json({ error: 'Solo el administrador' });
   let b = req.body; if (typeof b === 'string') { try { b = JSON.parse(b || '{}'); } catch (e) { b = {}; } }
+  // Enviar un código de descuento por correo (no necesita pedido)
+  if (b.accion === 'enviar_cupon') {
+    const email = String(b.email || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Falta el correo del cliente.' });
+    const filas = await db('ajustes?clave=eq.cupones&select=valor');
+    const v = (filas && filas[0] && filas[0].valor) || { lista: [] };
+    const cup = (v.lista || []).find(c => String(c.codigo).toUpperCase() === String(b.codigo || '').toUpperCase());
+    if (!cup) return res.status(404).json({ error: 'Ese cupón no existe.' });
+    const r = await correoCupon({ para: email, nombre: b.nombre, cupon: cup, mensaje: String(b.mensaje || '').slice(0, 2000), asunto: String(b.asunto || '').slice(0, 150) });
+    if (!r.ok) return res.status(502).json({ error: r.motivo || 'No se ha podido enviar' });
+    cup.enviados = [...(cup.enviados || []), { email, fecha: new Date().toISOString() }].slice(-200);
+    await db('ajustes?clave=eq.cupones', { method: 'PATCH', body: JSON.stringify({ valor: v }) }).catch(() => {});
+    return res.status(200).json({ ok: true });
+  }
   const id = String(b.id || '').replace(/[^a-f0-9-]/gi, '');
   if (!id) return res.status(400).json({ error: 'Falta el pedido' });
   const [p] = await db(`pedidos?id=eq.${id}`);

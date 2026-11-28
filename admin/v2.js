@@ -143,9 +143,11 @@ function pintarClientes() {
           <h1 style="font-size:24px">${esc(c.nombre || c.email)}</h1>
           <div class="small"><a href="mailto:${esc(c.email)}">${esc(c.email)}</a>${c.telefono ? ` · <a href="tel:${esc(c.telefono)}">${esc(c.telefono)}</a>` : ''}${c.ciudad ? ' · ' + esc(c.ciudad) : ''}</div>
           <div class="row"><span><strong>${c.pedidos.length}</strong> pedido${c.pedidos.length > 1 ? 's' : ''}</span><span>· <strong>${eur(c.gastado)}</strong> gastado</span></div>
+          <button class="btn b-line" id="envCupCli" style="align-self:flex-start;min-height:42px">🎁 Enviar código de descuento</button>
         </div>
         <div class="card">${c.pedidos.map(p => `<div class="prow" style="cursor:pointer" data-ped="${p.id}"><div class="pinfo"><div class="pname">#${p.numero} · ${eur(p.total)}</div><div class="small">${fecha(p.pagado || p.creado)} · ${(p.productos || []).length} art.</div></div>${chipPed(p.estado)}</div>`).join('')}</div>`;
       $('#volverCli').onclick = () => { cliAbierto = null; pintarClientes(); };
+      $('#envCupCli').onclick = () => abrirEnviarCupon({ email: c.email, nombre: c.nombre, motivo: 'gracias' });
       document.querySelectorAll('[data-ped]').forEach(a => a.onclick = () => { vista = 'pedidos'; pedidoAbierto = a.dataset.ped; pintar(); });
       return;
     }
@@ -200,8 +202,9 @@ function pintarCupones() {
         <div class="prow">
           <div class="pinfo"><div class="pname" style="font-family:ui-monospace,monospace">${esc(c.codigo)}</div>
           <div class="small">${textoCupon(c)}${c.minimo ? ` · desde ${eur(c.minimo)}` : ''}${c.caduca ? ` · hasta el ${new Date(c.caduca).toLocaleDateString('es-ES')}` : ''}</div>
-          <div class="small">Usado ${Number(c.usos || 0)}${c.max ? ' de ' + c.max : ''} ${Number(c.usos || 0) === 1 ? 'vez' : 'veces'}</div>
+          <div class="small">Usado ${Number(c.usos || 0)}${c.max ? ' de ' + c.max : ''} ${Number(c.usos || 0) === 1 ? 'vez' : 'veces'}${c.enviados && c.enviados.length ? ` · enviado a ${c.enviados.length === 1 ? esc(c.enviados[0].email) : c.enviados.length + ' clientes'}` : c.para ? ' · para ' + esc(c.para) : ''}</div>
           <span class="tag ${on ? 't-pub' : 't-bor'}">${on ? 'Activo' : cad ? 'Caducado' : lleno ? 'Agotado' : 'Pausado'}</span></div>
+          ${on ? `<button class="btn b-ghost" data-cenv="${i}" style="min-height:40px;padding:0 12px">Enviar</button>` : ''}
           <button class="btn b-ghost" data-cpaus="${i}" style="min-height:40px;padding:0 12px">${c.activo === false ? 'Activar' : 'Pausar'}</button>
           <button class="btn b-ghost" data-cdel="${i}" style="min-height:40px;padding:0 12px" aria-label="Borrar">✕</button>
         </div>`; }).join('') : '<div class="empty">Todavía no tienes cupones.</div>'}
@@ -223,6 +226,7 @@ function pintarCupones() {
     try { await guardarClave('cupones', { lista: [c, ...CUPONES] }); CUPONES.unshift(c); toast('Cupón creado'); pintarCupones(); }
     catch (e) { err('No se ha podido guardar: ' + esc(e.message)); }
   };
+  document.querySelectorAll('[data-cenv]').forEach(b => b.onclick = () => abrirEnviarCupon({ codigo: CUPONES[Number(b.dataset.cenv)].codigo, motivo: 'general' }));
   document.querySelectorAll('[data-cpaus]').forEach(b => b.onclick = async () => {
     const c = CUPONES[Number(b.dataset.cpaus)]; c.activo = c.activo === false;
     try { await guardarClave('cupones', { lista: CUPONES }); pintarCupones(); } catch (e) { toast('No se ha podido guardar'); }
@@ -246,7 +250,8 @@ function bloqueFacturaCorreos(p) {
     </div>
     ${linea('confirmacion', 'Confirmación de pedido enviada')}${linea('enviado', 'Aviso de envío enviado')}${linea('reembolso', 'Aviso de reembolso enviado')}${linea('carrito', 'Recordatorio de carrito enviado')}
     ${p.cliente_email ? `<div class="row"><button class="btn b-ghost" id="reConf" style="min-height:40px;font-size:14px">${c.confirmacion ? 'Reenviar' : 'Enviar'} confirmación${p.factura ? ' con factura' : ''}</button>
-      ${['enviado', 'entregado'].includes(p.estado) ? `<button class="btn b-ghost" id="reEnv" style="min-height:40px;font-size:14px">${c.enviado ? 'Reenviar' : 'Enviar'} aviso de envío</button>` : ''}</div>` : ''}
+      ${['enviado', 'entregado'].includes(p.estado) ? `<button class="btn b-ghost" id="reEnv" style="min-height:40px;font-size:14px">${c.enviado ? 'Reenviar' : 'Enviar'} aviso de envío</button>` : ''}
+      <button class="btn b-ghost" id="envCupPed" style="min-height:40px;font-size:14px">🎁 Enviar código de descuento</button></div>` : ''}
   </div>`;
 }
 function bloqueReembolso(p) {
@@ -276,6 +281,7 @@ function activarBloquesPedido(p) {
   };
   if ($('#reConf')) $('#reConf').onclick = e => envia(e.target, 'reenviar_confirmacion', 'Confirmación enviada');
   if ($('#reEnv')) $('#reEnv').onclick = e => envia(e.target, 'aviso_envio', 'Aviso de envío enviado');
+  if ($('#envCupPed')) $('#envCupPed').onclick = () => abrirEnviarCupon({ email: p.cliente_email, nombre: p.cliente_nombre, numero: p.numero, motivo: p.estado === 'reembolsado' ? 'disculpa' : 'gracias' });
   if ($('#rYa')) $('#rYa').onclick = async () => {
     const imp = nOrNull($('#rImp').value);
     if (!(imp > 0)) { $('#rMsg').innerHTML = '<div class="msg err">Pon el importe a devolver.</div>'; return; }
@@ -428,4 +434,80 @@ async function accionBloque(acc, boton) {
   SEL.clear();
   await cargar(); pintarLista();
   toast(error ? 'Algún cambio no se ha podido hacer: ' + error.message : 'Hecho');
+}
+
+/* ---------- ENVIAR UN CÓDIGO DE DESCUENTO POR CORREO ---------- */
+let ENVC = null;   // { email, nombre, motivo, numero, volver: {vista, pedidoAbierto, cliAbierto}, codigo? }
+const TEXTOS_CUPON = {
+  disculpa: n => ({ asunto: 'Te pedimos disculpas · un regalo de EpicOutlet.es', prefijo: 'PERDON', mensaje: `Sentimos mucho no haber podido enviarte tu pedido${n ? ' #' + n : ''}: el producto se agotó justo antes de prepararlo. Ya te hemos devuelto el dinero.\n\nComo disculpa, te regalamos este código para tu próxima compra. Esperamos verte pronto por EpicOutlet.es.` }),
+  gracias: n => ({ asunto: 'Gracias por tu compra · un regalo para la próxima', prefijo: 'GRACIAS', mensaje: `Gracias por confiar en EpicOutlet.es${n ? ' con tu pedido #' + n : ''}. Nos alegra mucho tenerte como cliente.\n\nPara tu próxima compra, aquí tienes un código de descuento.` }),
+  carrito: n => ({ asunto: 'Te guardamos un descuento · EpicOutlet.es', prefijo: 'VUELVE', mensaje: 'Vimos que no pudiste terminar tu compra en EpicOutlet.es. Si tuviste algún problema con el pago, respóndenos y te ayudamos.\n\nPara animarte, aquí tienes un código de descuento. Las unidades son limitadas.' }),
+  general: () => ({ asunto: 'Un código de descuento para ti · EpicOutlet.es', prefijo: 'REGALO', mensaje: 'Tenemos un pequeño regalo para ti: un código de descuento para tu próxima compra en EpicOutlet.es.' })
+};
+function abrirEnviarCupon(o) {
+  ENVC = { motivo: 'general', ...o, volver: { vista, pedidoAbierto, cliAbierto } };
+  vista = 'enviarcupon'; window.scrollTo(0, 0); pintar();
+}
+function pintarEnviarCupon() {
+  const E = ENVC || { motivo: 'general' };
+  const t = TEXTOS_CUPON[E.motivo] ? TEXTOS_CUPON[E.motivo](E.numero) : TEXTOS_CUPON.general();
+  const hoy = new Date(), cad = new Date(hoy.getTime() + 30 * 864e5).toISOString().slice(0, 10);
+  const activos = CUPONES.filter(c => c.activo !== false && !(c.caduca && c.caduca < hoy.toISOString().slice(0, 10)) && !(c.max && Number(c.usos || 0) >= Number(c.max)));
+  $('#app').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><button class="btn b-ghost" id="volverEnvc" style="min-height:44px">← Volver</button></div>
+    <form class="card stack" id="fEnvc">
+      <h1 style="font-size:24px">Enviar código de descuento</h1>
+      <div class="g2">
+        <label class="f">Correo del cliente<input class="in" name="email" type="email" required value="${esc(E.email || '')}"></label>
+        <label class="f">Nombre<input class="in" name="nombre" value="${esc(E.nombre || '')}"></label>
+      </div>
+      <label class="f">Motivo<select class="in" name="motivo">
+        <option value="disculpa">Disculpa (pedido sin stock, retraso…)</option><option value="gracias">Agradecimiento</option><option value="carrito">No terminó la compra</option><option value="general">Otro</option></select></label>
+      <div class="card" style="background:var(--soft);margin:0;padding:12px 14px">
+        <label class="check"><input type="radio" name="modo" value="nuevo" ${E.codigo ? '' : 'checked'}>Crear un código solo para este cliente (un solo uso)</label>
+        <div class="g2" id="nuevoCup">
+          <label class="f">Descuento<select class="in" name="tipo"><option value="pct">% de descuento</option><option value="eur">€ de descuento</option><option value="envio">Envío gratis</option></select></label>
+          <label class="f">Valor<input class="in" name="valor" inputmode="decimal" value="10"></label>
+          <label class="f">Válido hasta<input class="in" name="caduca" type="date" value="${cad}"></label>
+          <label class="f">Compra mínima (€) <span class="small">opcional</span><input class="in" name="minimo" inputmode="decimal"></label>
+        </div>
+        ${activos.length ? `<label class="check" style="margin-top:8px"><input type="radio" name="modo" value="existente" ${E.codigo ? 'checked' : ''}>Usar uno que ya tengo</label>
+        <select class="in" name="existente">${activos.map(c => `<option value="${esc(c.codigo)}" ${E.codigo === c.codigo ? 'selected' : ''}>${esc(c.codigo)} · ${esc(textoCupon(c))}</option>`).join('')}</select>` : ''}
+      </div>
+      <label class="f">Asunto<input class="in" name="asunto" value="${esc(t.asunto)}"></label>
+      <label class="f">Mensaje<textarea class="in" name="mensaje" rows="6" style="min-height:150px">${esc(t.mensaje)}</textarea></label>
+      <p class="small" style="margin:0">El correo lleva el código bien grande, las condiciones y un botón a la tienda.</p>
+      <div id="envcMsg"></div>
+      <button class="btn b-brand" type="submit" style="align-self:flex-start">Enviar correo</button>
+    </form>`;
+  const f = $('#fEnvc');
+  f.motivo.value = E.motivo;
+  f.motivo.onchange = () => { const x = TEXTOS_CUPON[f.motivo.value](E.numero); f.asunto.value = x.asunto; f.mensaje.value = x.mensaje; };
+  f.tipo.onchange = () => { f.valor.parentElement.style.display = f.tipo.value === 'envio' ? 'none' : ''; if (f.tipo.value === 'eur') f.valor.value = '5'; if (f.tipo.value === 'pct') f.valor.value = '10'; };
+  $('#volverEnvc').onclick = () => { const v = ENVC.volver; vista = v.vista; pedidoAbierto = v.pedidoAbierto; cliAbierto = v.cliAbierto; ENVC = null; pintar(); };
+  f.onsubmit = async ev => {
+    ev.preventDefault();
+    const err = m => { $('#envcMsg').innerHTML = `<div class="msg err">${esc(m)}</div>`; };
+    const email = f.email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('Escribe el correo del cliente.');
+    const b = f.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Enviando…';
+    try {
+      let codigo;
+      if ((new FormData(f)).get('modo') === 'existente') codigo = f.existente.value;
+      else {
+        const valor = nOrNull(f.valor.value);
+        if (f.tipo.value !== 'envio' && !(valor > 0)) throw new Error('Pon el valor del descuento.');
+        if (f.tipo.value === 'pct' && valor > 90) throw new Error('Como máximo un 90 %.');
+        const pref = (TEXTOS_CUPON[f.motivo.value] || TEXTOS_CUPON.general)(E.numero).prefijo;
+        const a = new Uint8Array(4); crypto.getRandomValues(a);
+        codigo = `${pref}-${Array.from(a, x => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[x % 32]).join('')}`;
+        const c = { codigo, tipo: f.tipo.value, valor: f.tipo.value === 'envio' ? null : valor, minimo: nOrNull(f.minimo.value), caduca: f.caduca.value || null, max: 1, usos: 0, activo: true, para: email, nota: f.motivo.value, creado: new Date().toISOString() };
+        await guardarClave('cupones', { lista: [c, ...CUPONES] }); CUPONES.unshift(c);
+      }
+      await apiPanel('/api/admin-pedido', { accion: 'enviar_cupon', email, nombre: f.nombre.value.trim(), codigo, asunto: f.asunto.value.trim(), mensaje: f.mensaje.value });
+      await cargarV2();
+      toast(`Código ${codigo} enviado a ${email}`);
+      const v = ENVC.volver; vista = v.vista; pedidoAbierto = v.pedidoAbierto; cliAbierto = v.cliAbierto; ENVC = null; pintar();
+    } catch (e) { err(e.message); b.disabled = false; b.textContent = 'Enviar correo'; }
+  };
 }
