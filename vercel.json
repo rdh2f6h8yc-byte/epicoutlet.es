@@ -15,6 +15,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/feed.xml",
+      "destination": "/api/feed"
+    },
+    {
       "source": "/producto/:clave",
       "destination": "/api/pagina?t=producto&k=:clave"
     },
