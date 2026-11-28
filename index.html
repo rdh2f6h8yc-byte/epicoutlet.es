@@ -1177,6 +1177,7 @@ function pageNotFound() {
    COOKIES Y GOOGLE ANALYTICS (solo se carga si el cliente acepta)
    =========================================================== */
 const GA_ID = (typeof EO_CONFIG !== 'undefined' && EO_CONFIG.gaId) || '';
+const ES_CONTENEDOR = /^GT[M]?-/.test(GA_ID);
 const CK_CLAVE = 'eo_cookies';
 let gaCargado = false, ultimaVista = '';
 function leerCookies() { try { return JSON.parse(localStorage.getItem(CK_CLAVE) || 'null'); } catch (e) { return null; } }
@@ -1187,7 +1188,8 @@ function cargarGA() {
   window.gtag = function () { dataLayer.push(arguments); };
   gtag('consent', 'default', { analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
   gtag('js', new Date());
-  gtag('config', GA_ID, { send_page_view: false, anonymize_ip: true });
+  // Con un ID G- configuramos nosotros; con una etiqueta de Google (GTM-) la configuración la lleva el propio contenedor
+  if (!ES_CONTENEDOR) gtag('config', GA_ID, { send_page_view: false, anonymize_ip: true });
   const sc = document.createElement('script'); sc.async = true; sc.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
   document.head.appendChild(sc);
   ultimaVista = ''; vistaGA();
@@ -1200,7 +1202,7 @@ function borrarCookiesGA() {
 }
 function analiticaOk() { const c = leerCookies(); return !!(GA_ID && c && c.a); }
 function vistaGA() {
-  if (!gaCargado || !analiticaOk()) return;
+  if (!gaCargado || !analiticaOk() || ES_CONTENEDOR) return;   // el contenedor ya cuenta las páginas (también al navegar sin recargar)
   const url = location.pathname + location.search;
   if (url === ultimaVista) return; ultimaVista = url;
   gtag('event', 'page_view', { page_location: location.href, page_path: url, page_title: document.title });
