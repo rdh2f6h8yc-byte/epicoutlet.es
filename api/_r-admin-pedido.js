@@ -4,7 +4,7 @@
 //   { id, accion: 'reenviar_confirmacion' }  → vuelve a mandar la confirmación con la factura
 const { db, stripe, redondo } = require('./_srv.js');
 const { esAdmin } = require('./_util.js');
-const { correoEnviado, correoReembolso, correoConfirmacion, correoActivo, correoCupon } = require('./_correo.js');
+const { correoEnviado, correoEntregado, correoReembolso, correoConfirmacion, correoActivo, correoCupon } = require('./_correo.js');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -33,6 +33,10 @@ module.exports = async (req, res) => {
   try {
     if (b.accion === 'aviso_envio') {
       const r = await correoEnviado(p);
+      return res.status(r.ok ? 200 : 502).json(r);
+    }
+    if (b.accion === 'aviso_entregado') {
+      const r = await correoEntregado(p);
       return res.status(r.ok ? 200 : 502).json(r);
     }
     if (b.accion === 'reenviar_confirmacion') {

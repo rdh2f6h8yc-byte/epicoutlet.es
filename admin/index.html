@@ -106,7 +106,7 @@ ol.steps li{margin-bottom:8px}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/config.js"></script>
-<script src="/admin/v2.js?v=2"></script>
+<script src="/admin/v2.js?v=3"></script>
 <script>
 /* ===========================================================
    Panel de EpicOutlet.es
@@ -648,6 +648,7 @@ function pintarPedido() {
         <button class="btn b-line" data-est="">Guardar</button>
       </div>
       ${p.estado === 'pedido_proveedor' && p.cliente_email ? '<label class="check"><input type="checkbox" id="avEnv" checked>Al marcarlo como enviado, mandar al cliente el correo con el seguimiento</label>' : ''}
+      ${p.estado === 'enviado' && p.cliente_email ? '<label class="check"><input type="checkbox" id="avEnv" checked>Al marcarlo como entregado, mandar al cliente un correo de agradecimiento</label>' : ''}
     </div>
     ${bloqueFacturaCorreos(p)}
 

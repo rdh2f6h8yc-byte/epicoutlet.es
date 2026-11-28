@@ -47,7 +47,7 @@ function tablaLineas(p) {
     <td style="padding:10px 0;border-bottom:1px solid #EEE;width:56px">${l.imagen ? `<img src="${esc(l.imagen)}" width="48" height="48" alt="" style="border-radius:8px;object-fit:cover;display:block">` : ''}</td>
     <td style="padding:10px 8px;border-bottom:1px solid #EEE;font-size:14px;line-height:1.35">${esc(l.nombre)}<div style="color:#6B6B73;font-size:13px">${l.cantidad} × ${eur(l.precio)}</div></td>
     <td style="padding:10px 0;border-bottom:1px solid #EEE;font-size:14px;text-align:right;white-space:nowrap">${eur(l.precio * l.cantidad)}</td></tr>`).join('');
-  const fila = (a, b, fuerte) => `<tr><td></td><td style="padding:5px 8px;font-size:14px;${fuerte ? 'font-weight:800' : 'color:#6B6B73'}">${a}</td><td style="padding:5px 0;font-size:14px;text-align:right;${fuerte ? 'font-weight:800' : ''}">${b}</td></tr>`;
+  const fila = (a, b, fuerte) => `<tr><td></td><td style="padding:5px 8px;font-size:14px;${fuerte ? 'font-weight:800' : 'color:#6B6B73'}">${a}</td><td style="padding:5px 0;font-size:14px;text-align:right;white-space:nowrap;${fuerte ? 'font-weight:800' : ''}">${b}</td></tr>`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${filas}
     ${fila('Envío', Number(p.envio) ? eur(p.envio) : 'Gratis')}
     ${Number(p.descuento) ? fila(`Descuento${p.cupon ? ' (' + esc(p.cupon) + ')' : ''}`, '−' + eur(p.descuento)) : ''}
@@ -122,6 +122,21 @@ async function correoEnviado(p) {
   return r;
 }
 
+// 2b) Pedido entregado: agradecimiento
+async function correoEntregado(p) {
+  const html = marco(`Pedido #${p.numero} entregado`, `
+    <h1 style="font-size:24px;margin:0 0 8px">¡Gracias por tu compra${nombre1(p) ? ', ' + nombre1(p) : ''}! 🧡</h1>
+    <p style="font-size:15px;line-height:1.55;color:#3A3A40;margin:0 0 14px">Tu pedido <strong>#${p.numero}</strong> ya está entregado. Esperamos que lo disfrutes.</p>
+    <p style="font-size:15px;line-height:1.55;color:#3A3A40;margin:0 0 14px">Si algo no está bien, respóndenos a este correo y lo solucionamos. Tienes <strong>14 días</strong> para devolverlo si no te convence.</p>
+    ${tablaLineas(p)}
+    <p style="font-size:15px;line-height:1.55;color:#3A3A40;margin:20px 0 16px">Cada día entran nuevas liquidaciones y productos reprecintados a precio de outlet. ¡Te esperamos!</p>
+    <p style="margin:0 0 8px">${boton(`${SITIO}/coleccion/novedades`, 'Ver las novedades')}</p>`);
+  const r = await enviar({ para: p.cliente_email, asunto: `¡Gracias por tu compra! Pedido #${p.numero} entregado`, html,
+    texto: `Tu pedido #${p.numero} ya está entregado. Gracias por comprar en EpicOutlet.es.` });
+  if (r.ok) await marcar(p, 'entregado');
+  return r;
+}
+
 // 3) Reembolso, con la factura rectificativa
 async function correoReembolso(p, importe, motivo, rect) {
   const { empresa, iva } = await empresaYIva();
@@ -174,4 +189,4 @@ async function correoCupon({ para, nombre, cupon, mensaje, asunto }) {
   return enviar({ para, asunto: asunto || 'Un código de descuento para ti · EpicOutlet.es', html, texto: `${mensaje || ''}\n\nTu código: ${cupon.codigo} (${cond}). ${extra}` });
 }
 
-module.exports = { correoCupon, enviar, correoActivo, correoConfirmacion, correoEnviado, correoReembolso, correoCarrito, empresaYIva, urlSeguimiento };
+module.exports = { correoEntregado, correoCupon, enviar, correoActivo, correoConfirmacion, correoEnviado, correoReembolso, correoCarrito, empresaYIva, urlSeguimiento };

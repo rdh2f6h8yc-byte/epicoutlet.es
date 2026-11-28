@@ -248,9 +248,10 @@ function bloqueFacturaCorreos(p) {
       ${p.factura ? `<button class="btn b-line" data-pdf="factura" style="min-height:42px">Ver factura ${esc(p.factura)}</button>` : `<span class="small">${esPrueba(p) ? 'Los pedidos de prueba no llevan factura.' : 'Sin factura (pedido anterior a las facturas o falta ejecutar el SQL nuevo).'}</span>`}
       ${p.rectificativa ? `<button class="btn b-line" data-pdf="rectificativa" style="min-height:42px">Ver rectificativa ${esc(p.rectificativa)}</button>` : ''}
     </div>
-    ${linea('confirmacion', 'Confirmación de pedido enviada')}${linea('enviado', 'Aviso de envío enviado')}${linea('reembolso', 'Aviso de reembolso enviado')}${linea('carrito', 'Recordatorio de carrito enviado')}
+    ${linea('confirmacion', 'Confirmación de pedido enviada')}${linea('enviado', 'Aviso de envío enviado')}${linea('entregado', 'Agradecimiento por la entrega enviado')}${linea('reembolso', 'Aviso de reembolso enviado')}${linea('carrito', 'Recordatorio de carrito enviado')}
     ${p.cliente_email ? `<div class="row"><button class="btn b-ghost" id="reConf" style="min-height:40px;font-size:14px">${c.confirmacion ? 'Reenviar' : 'Enviar'} confirmación${p.factura ? ' con factura' : ''}</button>
       ${['enviado', 'entregado'].includes(p.estado) ? `<button class="btn b-ghost" id="reEnv" style="min-height:40px;font-size:14px">${c.enviado ? 'Reenviar' : 'Enviar'} aviso de envío</button>` : ''}
+      ${p.estado === 'entregado' ? `<button class="btn b-ghost" id="reEnt" style="min-height:40px;font-size:14px">${c.entregado ? 'Reenviar' : 'Enviar'} agradecimiento</button>` : ''}
       <button class="btn b-ghost" id="envCupPed" style="min-height:40px;font-size:14px">🎁 Enviar código de descuento</button></div>` : ''}
   </div>`;
 }
@@ -281,6 +282,7 @@ function activarBloquesPedido(p) {
   };
   if ($('#reConf')) $('#reConf').onclick = e => envia(e.target, 'reenviar_confirmacion', 'Confirmación enviada');
   if ($('#reEnv')) $('#reEnv').onclick = e => envia(e.target, 'aviso_envio', 'Aviso de envío enviado');
+  if ($('#reEnt')) $('#reEnt').onclick = e => envia(e.target, 'aviso_entregado', 'Agradecimiento enviado');
   if ($('#envCupPed')) $('#envCupPed').onclick = () => abrirEnviarCupon({ email: p.cliente_email, nombre: p.cliente_nombre, numero: p.numero, motivo: p.estado === 'reembolsado' ? 'disculpa' : 'gracias' });
   if ($('#rYa')) $('#rYa').onclick = async () => {
     const imp = nOrNull($('#rImp').value);
@@ -297,9 +299,10 @@ function activarBloquesPedido(p) {
 }
 // Tras marcar «enviado» en el panel: correo automático con el seguimiento
 async function trasCambioEstado(p, nuevo) {
-  if (nuevo !== 'enviado' || !p.cliente_email || !$('#avEnv') || !$('#avEnv').checked) return;
-  try { await apiPanel('/api/admin-pedido', { id: p.id, accion: 'aviso_envio' }); toast('Cliente avisado por correo'); }
-  catch (e) { alert('Marcado como enviado, pero el correo no ha salido: ' + e.message); }
+  const acc = nuevo === 'enviado' ? 'aviso_envio' : nuevo === 'entregado' ? 'aviso_entregado' : null;
+  if (!acc || !p.cliente_email || !$('#avEnv') || !$('#avEnv').checked) return;
+  try { await apiPanel('/api/admin-pedido', { id: p.id, accion: acc }); toast('Cliente avisado por correo'); }
+  catch (e) { alert(`Marcado como ${nuevo}, pero el correo no ha salido: ` + e.message); }
 }
 
 /* ---------- AJUSTES: facturación, beneficio, importación automática ---------- */
